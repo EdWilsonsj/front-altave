@@ -1,11 +1,8 @@
-import LoginPage from './pages/loginpage';
-import './index.css';
+import LoginPage from "./pages/loginpage"; // ✅ importa o default export
 
 function App() {
   return (
-    <div className="App">
-      <LoginPage />
-    </div>
+    <LoginPage />
   );
 }
 
