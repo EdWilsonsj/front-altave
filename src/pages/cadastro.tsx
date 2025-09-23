@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Eye,
   EyeOff,
@@ -8,11 +8,30 @@ import {
   Phone,
   Calendar,
   FileText,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Cadastro() {
   const navigate = useNavigate();
+
+  // dark mode controlado pelo usuário (mesma lógica do LoginPage)
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("theme") === "dark";
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (darkMode) {
+      root.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      root.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [darkMode]);
 
   const [formData, setFormData] = useState({
     nomeCompleto: "",
@@ -21,6 +40,7 @@ export default function Cadastro() {
     dataNascimento: "",
     telefone: "",
     senha: "",
+    confirmarSenha: "",
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -84,7 +104,7 @@ export default function Cadastro() {
         `Cadastro realizado com sucesso!\n\nNome: ${formData.nomeCompleto}\nEmail: ${formData.email}\nCPF: ${formData.cpf}`
       );
       setIsLoading(false);
-      navigate("/login"); // redireciona após cadastro
+      navigate("/login");
     }, 2000);
   };
 
@@ -99,16 +119,31 @@ export default function Cadastro() {
     aceitarTermos;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+      {/* Toggle Dark/Light */}
+      <button
+        onClick={() => setDarkMode((v) => !v)}
+        aria-label="Alternar tema"
+        className="absolute top-4 left-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:scale-105 transition-transform shadow"
+      >
+        {darkMode ? (
+          <Sun className="h-5 w-5 text-yellow-400" />
+        ) : (
+          <Moon className="h-5 w-5 text-gray-800" />
+        )}
+      </button>
+
       <div className="w-full max-w-2xl">
         {/* Card de Cadastro */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8 border border-blue-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-blue-100 dark:border-gray-700">
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-700 mb-2">
+            <h2 className="text-3xl font-bold text-gray-700 dark:text-gray-100 mb-2">
               Criar Conta
             </h2>
-            <p className="text-gray-500">Sistema de Gestão de Competências</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              Sistema de Gestão de Competências
+            </p>
           </div>
 
           {/* Formulário */}
@@ -119,7 +154,7 @@ export default function Cadastro() {
               <div className="md:col-span-2">
                 <label
                   htmlFor="nomeCompleto"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
+                  className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
                 >
                   Nome Completo
                 </label>
@@ -134,7 +169,7 @@ export default function Cadastro() {
                     required
                     value={formData.nomeCompleto}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
+                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="Seu nome completo"
                   />
                 </div>
@@ -144,7 +179,7 @@ export default function Cadastro() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
+                  className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
                 >
                   E-mail
                 </label>
@@ -159,7 +194,7 @@ export default function Cadastro() {
                     required
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
+                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="seu.email@altave.com"
                   />
                 </div>
@@ -169,7 +204,7 @@ export default function Cadastro() {
               <div>
                 <label
                   htmlFor="cpf"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
+                  className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
                 >
                   CPF
                 </label>
@@ -184,7 +219,7 @@ export default function Cadastro() {
                     required
                     value={formData.cpf}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
+                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="000.000.000-00"
                   />
                 </div>
@@ -194,7 +229,7 @@ export default function Cadastro() {
               <div>
                 <label
                   htmlFor="dataNascimento"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
+                  className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
                 >
                   Data de Nascimento
                 </label>
@@ -209,7 +244,7 @@ export default function Cadastro() {
                     required
                     value={formData.dataNascimento}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
+                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700"
                   />
                 </div>
               </div>
@@ -218,7 +253,7 @@ export default function Cadastro() {
               <div>
                 <label
                   htmlFor="telefone"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
+                  className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
                 >
                   Telefone
                 </label>
@@ -233,7 +268,7 @@ export default function Cadastro() {
                     required
                     value={formData.telefone}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
+                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="(11) 99999-9999"
                   />
                 </div>
@@ -245,7 +280,7 @@ export default function Cadastro() {
               <div>
                 <label
                   htmlFor="senha"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
+                  className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
                 >
                   Senha
                 </label>
@@ -260,7 +295,7 @@ export default function Cadastro() {
                     required
                     value={formData.senha}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
+                    className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="Mínimo 6 caracteres"
                   />
                   <button
@@ -280,7 +315,7 @@ export default function Cadastro() {
               <div>
                 <label
                   htmlFor="confirmarSenha"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
+                  className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
                 >
                   Confirmar Senha
                 </label>
@@ -295,7 +330,7 @@ export default function Cadastro() {
                     required
                     value={formData.confirmarSenha}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 placeholder-gray-400"
+                    className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="Repita sua senha"
                   />
                   <button
@@ -325,7 +360,7 @@ export default function Cadastro() {
               />
               <label
                 htmlFor="aceitar-termos"
-                className="ml-3 block text-sm font-medium text-gray-700"
+                className="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-200"
               >
                 Eu concordo com os{" "}
                 <button
@@ -366,8 +401,8 @@ export default function Cadastro() {
           </form>
 
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-            <p className="text-sm text-gray-500">
+          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600 text-center">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Já tem uma conta?{" "}
               <button
                 type="button"
@@ -382,7 +417,7 @@ export default function Cadastro() {
 
         {/* Footer geral */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             © {new Date().getFullYear()} Altave. Todos os direitos reservados.
           </p>
         </div>
