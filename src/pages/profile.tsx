@@ -19,6 +19,31 @@ import {
   Heart
 } from "lucide-react";
 
+interface Certificacao {
+  nome: string;
+  instituicao: string;
+  ano: string;
+}
+
+interface Projeto {
+  nome: string;
+  tecnologias: string[];
+  status: string;
+}
+
+interface Usuario {
+  nome: string;
+  email: string;
+  cargo: string;
+  departamento: string;
+  localizacao: string;
+  dataAdmissao: string;
+  nivel: string;
+  biografia: string;
+  objetivos: string;
+  avatar: string;
+}
+
 export default function Profile() {
   // Dark mode state
   const [darkMode, setDarkMode] = useState(false);
@@ -33,7 +58,7 @@ export default function Profile() {
   }, [darkMode]);
 
   // Dados do usuário
-  const [user] = useState({
+  const [user] = useState<Usuario>({
     nome: "Pedro Henrique Santos",
     email: "pedro.santos@altave.com",
     cargo: "Desenvolvedor Full Stack Sênior",
@@ -72,13 +97,13 @@ export default function Profile() {
     "Mentoria"
   ]);
 
-  const [certificacoes] = useState([
+  const [certificacoes] = useState<Certificacao[]>([
     { nome: "AWS Certified Developer", instituicao: "Amazon Web Services", ano: "2024" },
     { nome: "React Professional", instituicao: "Meta", ano: "2023" },
     { nome: "Scrum Master Certified", instituicao: "Scrum Alliance", ano: "2023" }
   ]);
 
-  const [projetos] = useState([
+  const [projetos] = useState<Projeto[]>([
     { nome: "Sistema de Gestão de Competências", tecnologias: ["React", "Node.js", "MongoDB"], status: "Em desenvolvimento" },
     { nome: "E-commerce Altave", tecnologias: ["Next.js", "PostgreSQL", "AWS"], status: "Concluído" },
     { nome: "API de Integração", tecnologias: ["Python", "FastAPI", "Docker"], status: "Concluído" }
@@ -101,15 +126,15 @@ export default function Profile() {
     }
   };
 
-  const removeHardSkill = (index) => {
+  const removeHardSkill = (index: number) => {
     setHardSkills(hardSkills.filter((_, i) => i !== index));
   };
 
-  const removeSoftSkill = (index) => {
+  const removeSoftSkill = (index: number) => {
     setSoftSkills(softSkills.filter((_, i) => i !== index));
   };
 
-  const handleKeyPress = (e, type) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, type: 'hard' | 'soft') => {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (type === 'hard') addHardSkill();
