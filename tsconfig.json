@@ -1,18 +1,23 @@
 {
   "compilerOptions": {
-    "moduleResolution": "bundler",
     "target": "ESNext",
     "module": "ESNext",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "allowJs": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "strict": true,
-    "baseUrl": "./src"
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
+  "include": ["src"],
   "exclude": [
     "node_modules",
+    "dist",
     "eslint.config.js",
     "postcss.config.js",
     "tailwind.config.js",
