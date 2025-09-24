@@ -10,5 +10,12 @@
     "skipLibCheck": true,
     "strict": true,
     "baseUrl": "./src"
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "eslint.config.js",
+    "postcss.config.js",
+    "tailwind.config.js",
+    "vite.config.ts"
+  ]
 }
