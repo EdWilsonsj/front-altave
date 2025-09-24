@@ -37,10 +37,17 @@ export default function LoginPage() {
     setIsLoading(true);
 
     setTimeout(() => {
-      alert(`Login realizado!\nEmail: ${formData.email}\nSenha: ${formData.password}`);
+      if (
+        formData.email === "admin@altave.com" &&
+        formData.password === "altave123"
+      ) {
+        alert("Login realizado com sucesso!");
+        navigate("/profile");
+      } else {
+        alert("Credenciais inválidas! Use as credenciais de teste.");
+      }
       setIsLoading(false);
-      navigate("/dashboard");
-    }, 1500);
+    }, 1000);
   };
 
   const isFormValid = formData.email && formData.password;
