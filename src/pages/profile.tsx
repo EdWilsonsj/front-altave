@@ -23,40 +23,29 @@ import {
 } from "lucide-react";
 
 export default function Profile() {
-  // Dark mode persistente (igual ao login)
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage?.getItem("theme") === "dark" || false;
-  });
+  // Dark mode state (sem localStorage para evitar erros na Vercel)
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    if (typeof document !== "undefined") {
-      const root = document.documentElement;
-      if (darkMode) {
-        root.classList.add("dark");
-        if (typeof localStorage !== "undefined") {
-          localStorage.setItem("theme", "dark");
-        }
-      } else {
-        root.classList.remove("dark");
-        if (typeof localStorage !== "undefined") {
-          localStorage.setItem("theme", "light");
-        }
-      }
+    const root = document.documentElement;
+    if (darkMode) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
     }
   }, [darkMode]);
 
   // Dados expandidos do usuário
   const [user] = useState({
-    nome: "Pedro Henrique Mattos",
-    email: "pedro.mattos@altave.com",
-    cargo: "Desenvolvedor Full Stack Pleno",
+    nome: "Pedro Henrique Santos",
+    email: "pedro.santos@altave.com",
+    cargo: "Desenvolvedor Full Stack Sênior",
     departamento: "Tecnologia da Informação",
-    telefone: "+55 (12) 98264-0796",
-    localizacao: "São José dos Campos, SP - Brasil",
+    telefone: "+55 (11) 99999-9999",
+    localizacao: "São Paulo, SP - Brasil",
     dataAdmissao: "Janeiro 2022",
-    nivel: "Pleno",
-    biografia: "Formado em desenvolvimento de sistemas e atualmente cursando banco de dados na fatec. Profisional com vasta exeriência em Power Platform. Inglês fluente e estudante de francês.",
+    nivel: "Sênior",
+    biografia: "Desenvolvedor apaixonado por tecnologia com mais de 5 anos de experiência em desenvolvimento full stack. Especialista em React, Node.js e arquiteturas modernas. Sempre em busca de novos desafios e oportunidades de crescimento. Acredito na importância do trabalho em equipe e na construção de soluções que fazem a diferença na vida das pessoas.",
     objetivos: "Tornar-me Tech Lead nos próximos 2 anos, contribuindo para projetos inovadores e mentorando desenvolvedores juniores.",
     avatar: "PH"
   });
