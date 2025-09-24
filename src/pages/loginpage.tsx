@@ -1,17 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
-  // Carregar estado inicial do tema só do localStorage
+  // dark mode persistente
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("theme") === "dark";
   });
 
-  // Aplicar/remover classe dark no <html> e salvar no localStorage
   useEffect(() => {
     const root = document.documentElement;
     if (darkMode) {
@@ -25,8 +24,8 @@ export default function LoginPage() {
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -38,10 +37,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     setTimeout(() => {
-      console.log("Login attempt:", formData);
-      alert(
-        `Login realizado!\nEmail: ${formData.email}\nSenha: ${formData.password}`
-      );
+      alert(`Login realizado!\nEmail: ${formData.email}\nSenha: ${formData.password}`);
       setIsLoading(false);
       navigate("/dashboard");
     }, 1500);
@@ -51,7 +47,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
-      {/* Toggle Dark/Light */}
+      {/* Botão Dark/Light */}
       <button
         onClick={() => setDarkMode((v) => !v)}
         aria-label="Alternar tema"
@@ -79,7 +75,7 @@ export default function LoginPage() {
 
           {/* Formulário */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Campo Email */}
+            {/* Email */}
             <div>
               <label
                 htmlFor="email"
@@ -98,13 +94,16 @@ export default function LoginPage() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                   placeholder="seu.email@altave.com"
+                  className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl
+                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200
+                             text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
+                             bg-white dark:bg-gray-700"
                 />
               </div>
             </div>
 
-            {/* Campo Senha */}
+            {/* Senha */}
             <div>
               <label
                 htmlFor="password"
@@ -123,24 +122,23 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                   placeholder="Digite sua senha"
+                  className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl
+                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200
+                             text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
+                             bg-white dark:bg-gray-700"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-400 hover:text-blue-600 transition-colors"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
 
-            {/* Lembrar-me e Esqueci senha */}
+            {/* Lembrar-me + Esqueci senha */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -158,22 +156,23 @@ export default function LoginPage() {
                   Lembrar-me
                 </label>
               </div>
-              <div className="text-sm">
-                <button
-                  type="button"
-                  onClick={() => alert("Funcionalidade em desenvolvimento!")}
-                  className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
-                >
-                  Esqueci minha senha
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => alert("Funcionalidade em desenvolvimento!")}
+                className="text-sm font-semibold text-blue-600 hover:text-blue-500 transition-colors"
+              >
+                Esqueci minha senha
+              </button>
             </div>
 
-            {/* Botão de Login */}
+            {/* Botão Login */}
             <button
               type="submit"
               disabled={!isFormValid || isLoading}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 shadow-lg"
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-4 px-6 rounded-xl
+                         font-bold text-lg hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2
+                         focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed
+                         transform hover:scale-[1.02] transition-all duration-200 shadow-lg"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -186,7 +185,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Link para cadastro */}
+          {/* Footer dentro do Card */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-300">
               Não tem uma conta?{" "}
@@ -198,11 +197,7 @@ export default function LoginPage() {
                 Criar conta
               </button>
             </p>
-          </div>
-
-          {/* Footer do Card */}
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
               Precisa de ajuda?{" "}
               <button
                 type="button"
@@ -233,7 +228,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer geral */}
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             © {new Date().getFullYear()} Altave. Todos os direitos reservados.

@@ -1,13 +1,8 @@
-/** @type {import('tailwindcss').Config} */
+// tailwind.config.js — mínimo para v4 (nada de "content" aqui)
 export default {
-    // só alterna com a classe "dark", nunca pelo sistema
-    darkMode: "class",
-    content: [
-      "./index.html",
-      "./src/**/*.{js,ts,jsx,tsx}", // cobre todos os arquivos React/Vite
-    ],
-    theme: {
-      extend: {},
-    },
-    plugins: [],
-  };
+  darkMode: ["class"], // usaremos a classe .dark no <html>
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
