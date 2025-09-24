@@ -1,29 +1,26 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { 
   User, 
   Mail, 
   Briefcase, 
   MapPin, 
-  Phone, 
   Calendar, 
   Award, 
   Code, 
-  Users, 
   Plus, 
   X, 
   Sun, 
   Moon,
   Edit3,
-  Star,
   Target,
-  TrendingUp,
   BookOpen,
-  Coffee,
   Heart
 } from "lucide-react";
 
 export default function Profile() {
-  // Dark mode state (sem localStorage para evitar erros na Vercel)
+  // Dark mode state
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
@@ -35,13 +32,12 @@ export default function Profile() {
     }
   }, [darkMode]);
 
-  // Dados expandidos do usuário
+  // Dados do usuário
   const [user] = useState({
     nome: "Pedro Henrique Santos",
     email: "pedro.santos@altave.com",
     cargo: "Desenvolvedor Full Stack Sênior",
     departamento: "Tecnologia da Informação",
-    telefone: "+55 (11) 99999-9999",
     localizacao: "São Paulo, SP - Brasil",
     dataAdmissao: "Janeiro 2022",
     nivel: "Sênior",
@@ -115,6 +111,7 @@ export default function Profile() {
 
   const handleKeyPress = (e, type) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       if (type === 'hard') addHardSkill();
       if (type === 'soft') addSoftSkill();
     }
@@ -178,7 +175,7 @@ export default function Profile() {
             {/* Botão de editar */}
             <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg">
               <Edit3 className="h-4 w-4" />
-              Editar  Perfil
+              Editar Perfil
             </button>
           </div>
         </div>
@@ -244,6 +241,7 @@ export default function Profile() {
                   <button
                     onClick={() => removeHardSkill(index)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    type="button"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -266,6 +264,7 @@ export default function Profile() {
               />
               <button
                 onClick={addHardSkill}
+                type="button"
                 className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors shadow-lg"
               >
                 <Plus className="h-4 w-4" />
@@ -291,6 +290,7 @@ export default function Profile() {
                   <button
                     onClick={() => removeSoftSkill(index)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    type="button"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -313,6 +313,7 @@ export default function Profile() {
               />
               <button
                 onClick={addSoftSkill}
+                type="button"
                 className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors shadow-lg"
               >
                 <Plus className="h-4 w-4" />
