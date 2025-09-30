@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
+
 export default function PaginaLogin() {
   // Hook para navegação entre as páginas
   const navegar = useNavigate();
@@ -61,7 +64,7 @@ export default function PaginaLogin() {
 
     // Lógica para usuários normais
     try {
-      const loginResponse = await fetch('/api/usuario/login', {
+      const loginResponse = await fetch(`${API_BASE_URL}/api/usuario/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dadosFormulario),
@@ -76,7 +79,7 @@ export default function PaginaLogin() {
 
       const usuario = await loginResponse.json();
 
-      const colaboradorResponse = await fetch(`/api/colaborador/by-email/${usuario.email}`);
+      const colaboradorResponse = await fetch(`${API_BASE_URL}/api/colaborador/by-email/${usuario.email}`);
       if (!colaboradorResponse.ok) {
         throw new Error('Perfil de colaborador não encontrado para este usuário.');
       }

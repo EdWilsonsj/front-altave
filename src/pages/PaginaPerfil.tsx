@@ -22,6 +22,8 @@ import {
   Star
 } from "lucide-react";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 // Interfaces que espelham os modelos do backend
 interface Cargo {
   nomeCargo: string;
@@ -111,7 +113,7 @@ export default function PaginaPerfil() {
   const aoSalvar = async () => {
     if (!colaborador) return;
     try {
-      const response = await fetch(`/api/colaborador/${colaborador.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/colaborador/${colaborador.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(colaborador),
@@ -146,7 +148,7 @@ export default function PaginaPerfil() {
     if (!id) return;
     setCarregando(true);
     try {
-      const response = await fetch(`/api/colaborador/${id}`);
+      const response = await fetch(`${API_BASE_URL}/api/colaborador/${id}`);
       if (!response.ok) {
         throw new Error('A resposta da rede não foi bem-sucedida.');
       }
@@ -177,7 +179,7 @@ export default function PaginaPerfil() {
         nomeCompetencia: novaHardSkill.trim(),
         colaborador: { id: colaborador.id }
       };
-      const response = await fetch('/api/hardskill', {
+      const response = await fetch(`${API_BASE_URL}/api/hardskill`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(novaSkill),
@@ -201,7 +203,7 @@ export default function PaginaPerfil() {
         nomeCompetencia: novaSoftSkill.trim(),
         colaborador: { id: colaborador.id }
       };
-      const response = await fetch('/api/softskill', {
+      const response = await fetch(`${API_BASE_URL}/api/softskill`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(novaSkill),
@@ -220,7 +222,7 @@ export default function PaginaPerfil() {
    * Remove uma hard skill do colaborador.
    */
   const removerHardSkill = async (skillId: number) => {
-    const response = await fetch(`/api/hardskill/${skillId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/hardskill/${skillId}`, {
       method: 'DELETE',
     });
     if (response.ok) {
@@ -234,7 +236,7 @@ export default function PaginaPerfil() {
    * Remove uma soft skill do colaborador.
    */
   const removerSoftSkill = async (skillId: number) => {
-    const response = await fetch(`/api/softskill/${skillId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/softskill/${skillId}`, {
       method: 'DELETE',
     });
     if (response.ok) {

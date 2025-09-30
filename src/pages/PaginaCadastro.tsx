@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 export default function PaginaCadastro() {
   // Hook para navegação entre as páginas
   const navegar = useNavigate();
@@ -119,7 +121,7 @@ export default function PaginaCadastro() {
     const { confirmarSenha, telefone, ...dadosUsuario } = dadosFormulario;
 
     try {
-      const response = await fetch('/api/usuario', {
+      const response = await fetch(`${API_BASE_URL}/api/usuario`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

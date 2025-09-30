@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, User } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 // Mock de dados, será substituído pela API
 const colaboradoresMock = [
   { id: 1, nome: 'Pedro Mattos', cargo: { nomeCargo: 'Desenvolvedor Java' }, email: 'pedro.mattos@altave.com.br' },
@@ -27,7 +29,7 @@ export default function VisaoColaboradores() {
   const pegaTodaAGalerinha = async () => {
     setCarregando(true);
     try {
-      const response = await fetch('/api/colaborador');
+      const response = await fetch(`${API_BASE_URL}/api/colaborador`);
       const data = await response.json();
       setListaColaboradores(data);
     } catch (erro) {
