@@ -1,26 +1,26 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Páginas
-import LoginPage from "./pages/loginpage"; 
-import Cadastro from "./pages/cadastro";
-import Profile from "./pages/profile";
+import PaginaLogin from "./pages/PaginaLogin";
+import PaginaCadastro from "./pages/PaginaCadastro";
+import PaginaPerfil from "./pages/PaginaPerfil";
+import PaginaDashboard from "./pages/PaginaDashboard";
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Login acessível tanto em "/" quanto em "/login" */}
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/login" element={<LoginPage />} />
+        {/* Rotas Públicas */}
+        <Route path="/" element={<PaginaLogin />} />
+        <Route path="/login" element={<PaginaLogin />} />
+        <Route path="/cadastro" element={<PaginaCadastro />} />
 
-        {/* Cadastro */}
-        <Route path="/cadastro" element={<Cadastro />} />
-
-        {/* Perfil */}
-        <Route path="/profile" element={<Profile />} />
+        {/* Rotas "Privadas" */}
+        <Route path="/profile/:id" element={<PaginaPerfil />} />
+        <Route path="/dashboard" element={<PaginaDashboard />} />
 
         {/* Rota coringa para evitar tela branca */}
-        <Route path="*" element={<LoginPage />} />
+        <Route path="*" element={<PaginaLogin />} />
       </Routes>
     </Router>
   );

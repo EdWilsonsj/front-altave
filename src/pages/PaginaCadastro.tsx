@@ -13,27 +13,30 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-export default function Cadastro() {
-  const navigate = useNavigate();
+export default function PaginaCadastro() {
+  // Hook para navegação entre as páginas
+  const navegar = useNavigate();
 
-  // dark mode controlado pelo usuário (mesma lógica do LoginPage)
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
+  // Estado para controlar o tema escuro, inicializado com o valor do localStorage
+  const [modoEscuro, setModoEscuro] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("theme") === "dark";
   });
 
+  // Efeito para aplicar a classe 'dark' ao HTML e salvar a preferência no localStorage
   useEffect(() => {
     const root = document.documentElement;
-    if (darkMode) {
+    if (modoEscuro) {
       root.classList.add("dark");
       localStorage.setItem("theme", "dark");
     } else {
       root.classList.remove("dark");
       localStorage.setItem("theme", "light");
     }
-  }, [darkMode]);
+  }, [modoEscuro]);
 
-  const [formData, setFormData] = useState({
+  // Estado para armazenar os dados do formulário de cadastro
+  const [dadosFormulario, setDadosFormulario] = useState({
     nomeCompleto: "",
     email: "",
     cpf: "",
@@ -43,90 +46,125 @@ export default function Cadastro() {
     confirmarSenha: "",
   });
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [aceitarTermos, setAceitarTermos] = useState(false);
+  // Estados para controlar a visibilidade das senhas e o status de carregamento
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const [termosAceitos, setTermosAceitos] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /**
+   * Atualiza o estado do formulário conforme o usuário digita nos inputs.
+   * Aplica formatação para campos específicos como CPF e telefone.
+   */
+  const aoMudarInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    let formattedValue = value;
+    let valorFormatado = value;
 
     if (name === "cpf") {
-      formattedValue = formatCPF(value);
+      valorFormatado = formatarCPF(value);
     }
 
     if (name === "telefone") {
-      formattedValue = formatTelefone(value);
+      valorFormatado = formatarTelefone(value);
     }
 
-    setFormData((prev) => ({
+    setDadosFormulario((prev) => ({
       ...prev,
-      [name]: formattedValue,
+      [name]: valorFormatado,
     }));
   };
 
-  const formatCPF = (value: string) => {
-    const numericValue = value.replace(/\D/g, "");
-    return numericValue
+  /**
+   * Formata o valor do CPF para o padrão 000.000.000-00.
+   */
+  const formatarCPF = (valor: string) => {
+    const valorNumerico = valor.replace(/\D/g, "");
+    return valorNumerico
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d{2})$/, "$1-$2")
       .substring(0, 14);
   };
 
-  const formatTelefone = (value: string) => {
-    const numericValue = value.replace(/\D/g, "");
-    return numericValue
+  /**
+   * Formata o valor do telefone para o padrão (00) 00000-0000.
+   */
+  const formatarTelefone = (valor: string) => {
+    const valorNumerico = valor.replace(/\D/g, "");
+    return valorNumerico
       .replace(/(\d{2})(\d)/, "($1) $2")
       .replace(/(\d{5})(\d)/, "$1-$2")
       .substring(0, 15);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  /**
+   * Lida com a submissão do formulário de cadastro.
+   * Envia os dados para a API criar um novo usuário.
+   */
+  const aoSubmeter = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (formData.senha !== formData.confirmarSenha) {
+    if (dadosFormulario.senha !== dadosFormulario.confirmarSenha) {
       alert("As senhas não coincidem!");
       return;
     }
 
-    if (!aceitarTermos) {
+    if (!termosAceitos) {
       alert("Você deve aceitar os termos de uso!");
       return;
     }
 
-    setIsLoading(true);
+    setCarregando(true);
 
-    setTimeout(() => {
-      console.log("Cadastro attempt:", formData);
-      alert(
-        `Cadastro realizado com sucesso!\n\nNome: ${formData.nomeCompleto}\nEmail: ${formData.email}\nCPF: ${formData.cpf}`
-      );
-      setIsLoading(false);
-      navigate("/login");
-    }, 2000);
+    const { confirmarSenha, telefone, ...dadosUsuario } = dadosFormulario;
+
+    try {
+      const response = await fetch('/api/usuario', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dadosUsuario),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Falha no cadastro.');
+      }
+
+      alert("Cadastro realizado com sucesso! Você será redirecionado para a página de login.");
+      navegar("/login");
+
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(`Erro no cadastro: ${error.message}`);
+      } else {
+        alert("Ocorreu um erro desconhecido.");
+      }
+    } finally {
+      setCarregando(false);
+    }
   };
 
-  const isFormValid =
-    formData.nomeCompleto &&
-    formData.email &&
-    formData.cpf &&
-    formData.dataNascimento &&
-    formData.telefone &&
-    formData.senha &&
-    formData.confirmarSenha &&
-    aceitarTermos;
+  // Variável booleana que verifica se o formulário está preenchido e válido para submissão
+  const formularioValido =
+    dadosFormulario.nomeCompleto &&
+    dadosFormulario.email &&
+    dadosFormulario.cpf &&
+    dadosFormulario.dataNascimento &&
+    dadosFormulario.telefone &&
+    dadosFormulario.senha &&
+    dadosFormulario.confirmarSenha &&
+    termosAceitos;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
-      {/* Toggle Dark/Light */}
       <button
-        onClick={() => setDarkMode((v) => !v)}
+        onClick={() => setModoEscuro((v) => !v)}
         aria-label="Alternar tema"
         className="absolute top-4 left-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:scale-105 transition-transform shadow"
       >
-        {darkMode ? (
+        {modoEscuro ? (
           <Sun className="h-5 w-5 text-yellow-400" />
         ) : (
           <Moon className="h-5 w-5 text-gray-800" />
@@ -134,9 +172,7 @@ export default function Cadastro() {
       </button>
 
       <div className="w-full max-w-2xl">
-        {/* Card de Cadastro */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-blue-100 dark:border-gray-700">
-          {/* Header */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-700 dark:text-gray-100 mb-2">
               Criar Conta
@@ -146,11 +182,8 @@ export default function Cadastro() {
             </p>
           </div>
 
-          {/* Formulário */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Grid */}
+          <form onSubmit={aoSubmeter} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Nome Completo */}
               <div className="md:col-span-2">
                 <label
                   htmlFor="nomeCompleto"
@@ -167,15 +200,14 @@ export default function Cadastro() {
                     name="nomeCompleto"
                     type="text"
                     required
-                    value={formData.nomeCompleto}
-                    onChange={handleInputChange}
+                    value={dadosFormulario.nomeCompleto}
+                    onChange={aoMudarInput}
                     className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="Seu nome completo"
                   />
                 </div>
               </div>
 
-              {/* Email */}
               <div>
                 <label
                   htmlFor="email"
@@ -192,15 +224,14 @@ export default function Cadastro() {
                     name="email"
                     type="email"
                     required
-                    value={formData.email}
-                    onChange={handleInputChange}
+                    value={dadosFormulario.email}
+                    onChange={aoMudarInput}
                     className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="seu.email@altave.com"
                   />
                 </div>
               </div>
 
-              {/* CPF */}
               <div>
                 <label
                   htmlFor="cpf"
@@ -217,15 +248,14 @@ export default function Cadastro() {
                     name="cpf"
                     type="text"
                     required
-                    value={formData.cpf}
-                    onChange={handleInputChange}
+                    value={dadosFormulario.cpf}
+                    onChange={aoMudarInput}
                     className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="000.000.000-00"
                   />
                 </div>
               </div>
 
-              {/* Data de Nascimento */}
               <div>
                 <label
                   htmlFor="dataNascimento"
@@ -242,14 +272,13 @@ export default function Cadastro() {
                     name="dataNascimento"
                     type="date"
                     required
-                    value={formData.dataNascimento}
-                    onChange={handleInputChange}
+                    value={dadosFormulario.dataNascimento}
+                    onChange={aoMudarInput}
                     className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700"
                   />
                 </div>
               </div>
 
-              {/* Telefone */}
               <div>
                 <label
                   htmlFor="telefone"
@@ -266,8 +295,8 @@ export default function Cadastro() {
                     name="telefone"
                     type="text"
                     required
-                    value={formData.telefone}
-                    onChange={handleInputChange}
+                    value={dadosFormulario.telefone}
+                    onChange={aoMudarInput}
                     className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="(11) 99999-9999"
                   />
@@ -275,7 +304,6 @@ export default function Cadastro() {
               </div>
             </div>
 
-            {/* Senha + Confirmar Senha */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label
@@ -291,19 +319,19 @@ export default function Cadastro() {
                   <input
                     id="senha"
                     name="senha"
-                    type={showPassword ? "text" : "password"}
+                    type={mostrarSenha ? "text" : "password"}
                     required
-                    value={formData.senha}
-                    onChange={handleInputChange}
+                    value={dadosFormulario.senha}
+                    onChange={aoMudarInput}
                     className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="Mínimo 6 caracteres"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={() => setMostrarSenha(!mostrarSenha)}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-400 hover:text-blue-600 transition-colors"
                   >
-                    {showPassword ? (
+                    {mostrarSenha ? (
                       <EyeOff className="h-5 w-5" />
                     ) : (
                       <Eye className="h-5 w-5" />
@@ -326,19 +354,19 @@ export default function Cadastro() {
                   <input
                     id="confirmarSenha"
                     name="confirmarSenha"
-                    type={showConfirmPassword ? "text" : "password"}
+                    type={mostrarConfirmarSenha ? "text" : "password"}
                     required
-                    value={formData.confirmarSenha}
-                    onChange={handleInputChange}
+                    value={dadosFormulario.confirmarSenha}
+                    onChange={aoMudarInput}
                     className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                     placeholder="Repita sua senha"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onClick={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-400 hover:text-blue-600 transition-colors"
                   >
-                    {showConfirmPassword ? (
+                    {mostrarConfirmarSenha ? (
                       <EyeOff className="h-5 w-5" />
                     ) : (
                       <Eye className="h-5 w-5" />
@@ -348,14 +376,13 @@ export default function Cadastro() {
               </div>
             </div>
 
-            {/* Termos */}
             <div className="flex items-start">
               <input
                 id="aceitar-termos"
                 name="aceitar-termos"
                 type="checkbox"
-                checked={aceitarTermos}
-                onChange={(e) => setAceitarTermos(e.target.checked)}
+                checked={termosAceitos}
+                onChange={(e) => setTermosAceitos(e.target.checked)}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
               />
               <label
@@ -383,13 +410,12 @@ export default function Cadastro() {
               </label>
             </div>
 
-            {/* Botão de Cadastro */}
             <button
               type="submit"
-              disabled={!isFormValid || isLoading}
+              disabled={!formularioValido || carregando}
               className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 shadow-lg"
             >
-              {isLoading ? (
+              {carregando ? (
                 <div className="flex items-center justify-center">
                   <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
                   Criando conta...
@@ -400,13 +426,12 @@ export default function Cadastro() {
             </button>
           </form>
 
-          {/* Footer */}
           <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Já tem uma conta?{" "}
               <button
                 type="button"
-                onClick={() => navigate("/login")}
+                onClick={() => navegar("/login")}
                 className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
               >
                 Fazer login
@@ -415,7 +440,6 @@ export default function Cadastro() {
           </div>
         </div>
 
-        {/* Footer geral */}
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             © {new Date().getFullYear()} Altave. Todos os direitos reservados.

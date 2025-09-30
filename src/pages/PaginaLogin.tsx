@@ -2,65 +2,111 @@ import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-export default function LoginPage() {
-  const navigate = useNavigate();
+export default function PaginaLogin() {
+  // Hook para navegação entre as páginas
+  const navegar = useNavigate();
 
-  // dark mode persistente
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
+  // Estado para controlar o tema escuro, inicializado com o valor do localStorage
+  const [modoEscuro, setModoEscuro] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("theme") === "dark";
   });
 
+  // Efeito para aplicar a classe 'dark' ao HTML e salvar a preferência no localStorage
   useEffect(() => {
     const root = document.documentElement;
-    if (darkMode) {
+    if (modoEscuro) {
       root.classList.add("dark");
       localStorage.setItem("theme", "dark");
     } else {
       root.classList.remove("dark");
       localStorage.setItem("theme", "light");
     }
-  }, [darkMode]);
+  }, [modoEscuro]);
 
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  // Estados do formulário
+  const [dadosFormulario, setDadosFormulario] = useState({ email: "", password: "" });
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [lembrarDeMim, setLembrarDeMim] = useState(false);
+  const [carregando, setCarregando] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /**
+   * Atualiza o estado do formulário conforme o usuário digita.
+   */
+  const aoMudarInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setDadosFormulario((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  /**
+   * Lida com a submissão do formulário de login.
+   * Autentica o usuário e o redireciona para a página de perfil ou dashboard.
+   */
+  const aoSubmeter = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setCarregando(true);
 
-    setTimeout(() => {
-      if (
-        formData.email === "admin@altave.com" &&
-        formData.password === "altave123"
-      ) {
-        alert("Login realizado com sucesso!");
-        navigate("/profile");
-      } else {
-        alert("Credenciais inválidas! Use as credenciais de teste.");
+    // Lógica especial para o admin
+    if (dadosFormulario.email === 'admin@altave.com') {
+        // Apenas uma verificação de senha simples para o admin, sem chamar a API real
+        if (dadosFormulario.password === 'altave123') {
+            alert("Bem-vindo, Admin!");
+            navegar('/dashboard');
+        } else {
+            alert('Senha de administrador incorreta.');
+            setCarregando(false);
+        }
+        return;
+    }
+
+    // Lógica para usuários normais
+    try {
+      const loginResponse = await fetch('/api/usuario/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dadosFormulario),
+      });
+
+      if (loginResponse.status === 401) {
+        throw new Error('Credenciais inválidas. Verifique seu email e senha.');
       }
-      setIsLoading(false);
-    }, 1000);
+      if (!loginResponse.ok) {
+        throw new Error('Ocorreu um erro durante o login.');
+      }
+
+      const usuario = await loginResponse.json();
+
+      const colaboradorResponse = await fetch(`/api/colaborador/by-email/${usuario.email}`);
+      if (!colaboradorResponse.ok) {
+        throw new Error('Perfil de colaborador não encontrado para este usuário.');
+      }
+
+      const colaborador = await colaboradorResponse.json();
+
+      alert("Login realizado com sucesso!");
+      navegar(`/profile/${colaborador.id}`);
+
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("Ocorreu um erro desconhecido.");
+      }
+    } finally {
+      setCarregando(false);
+    }
   };
 
-  const isFormValid = formData.email && formData.password;
+  const formularioValido = dadosFormulario.email && dadosFormulario.password;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
-      {/* Botão Dark/Light */}
       <button
-        onClick={() => setDarkMode((v) => !v)}
+        onClick={() => setModoEscuro((v) => !v)}
         aria-label="Alternar tema"
         className="absolute top-4 left-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:scale-105 transition-transform shadow"
       >
-        {darkMode ? (
+        {modoEscuro ? (
           <Sun className="h-5 w-5 text-yellow-400" />
         ) : (
           <Moon className="h-5 w-5 text-gray-800" />
@@ -68,9 +114,7 @@ export default function LoginPage() {
       </button>
 
       <div className="w-full max-w-lg">
-        {/* Card de Login */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-blue-100 dark:border-gray-700">
-          {/* Header */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-700 dark:text-gray-100 mb-2">
               Bem-vindo
@@ -80,9 +124,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Formulário */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email */}
+          <form onSubmit={aoSubmeter} className="space-y-6">
             <div>
               <label
                 htmlFor="email"
@@ -99,18 +141,14 @@ export default function LoginPage() {
                   name="email"
                   type="email"
                   required
-                  value={formData.email}
-                  onChange={handleInputChange}
+                  value={dadosFormulario.email}
+                  onChange={aoMudarInput}
                   placeholder="seu.email@altave.com"
-                  className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl
-                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200
-                             text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
-                             bg-white dark:bg-gray-700"
+                  className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                 />
               </div>
             </div>
 
-            {/* Senha */}
             <div>
               <label
                 htmlFor="password"
@@ -125,35 +163,31 @@ export default function LoginPage() {
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? "text" : "password"}
+                  type={mostrarSenha ? "text" : "password"}
                   required
-                  value={formData.password}
-                  onChange={handleInputChange}
+                  value={dadosFormulario.password}
+                  onChange={aoMudarInput}
                   placeholder="Digite sua senha"
-                  className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl
-                             focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200
-                             text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
-                             bg-white dark:bg-gray-700"
+                  className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword((v) => !v)}
+                  onClick={() => setMostrarSenha((v) => !v)}
                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-400 hover:text-blue-600 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {mostrarSenha ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
 
-            {/* Lembrar-me + Esqueci senha */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
+                  checked={lembrarDeMim}
+                  onChange={(e) => setLembrarDeMim(e.target.checked)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label
@@ -172,16 +206,12 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* Botão Login */}
             <button
               type="submit"
-              disabled={!isFormValid || isLoading}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-4 px-6 rounded-xl
-                         font-bold text-lg hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2
-                         focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed
-                         transform hover:scale-[1.02] transition-all duration-200 shadow-lg"
+              disabled={!formularioValido || carregando}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200 shadow-lg"
             >
-              {isLoading ? (
+              {carregando ? (
                 <div className="flex items-center justify-center">
                   <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
                   Entrando...
@@ -192,13 +222,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Footer dentro do Card */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-300">
               Não tem uma conta?{" "}
               <button
                 type="button"
-                onClick={() => navigate("/cadastro")}
+                onClick={() => navegar("/cadastro")}
                 className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
               >
                 Criar conta
@@ -217,25 +246,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Credenciais de Teste */}
-        <div className="mt-6 bg-blue-50 dark:bg-gray-800 border-2 border-blue-200 dark:border-gray-700 rounded-xl p-4">
-          <h3 className="text-sm font-bold text-blue-800 dark:text-blue-400 mb-2 flex items-center">
-            🚀 Credenciais para Teste
-          </h3>
-          <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-            <p>
-              <span className="font-semibold">Email:</span> admin@altave.com
-            </p>
-            <p>
-              <span className="font-semibold">Senha:</span> altave123
-            </p>
-            <p className="mt-2 italic text-blue-600 dark:text-blue-400">
-              * Apenas para desenvolvimento - será removido em produção
-            </p>
-          </div>
-        </div>
-
-        {/* Footer geral */}
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             © {new Date().getFullYear()} Altave. Todos os direitos reservados.

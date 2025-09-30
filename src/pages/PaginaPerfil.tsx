@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { 
   User, 
   Mail, 
@@ -21,7 +22,7 @@ import {
   Star
 } from "lucide-react";
 
-// Interfaces matching backend models
+// Interfaces que espelham os modelos do backend
 interface Cargo {
   nomeCargo: string;
 }
@@ -62,129 +63,211 @@ interface Colaborador {
   softSkills: SoftSkill[];
 }
 
-export default function Profile() {
-  const [darkMode, setDarkMode] = useState(false);
+export default function PaginaPerfil() {
+  // Hook para obter o ID da URL
+  const { id } = useParams<{ id: string }>();
+
+  // Estados do componente
+  const [modoEscuro, setModoEscuro] = useState(false);
   const [colaborador, setColaborador] = useState<Colaborador | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const [novaHardSkill, setNovaHardSkill] = useState("");
+  const [novaSoftSkill, setNovaSoftSkill] = useState("");
+  const [emEdicao, setEmEdicao] = useState(false);
+  const [colaboradorOriginal, setColaboradorOriginal] = useState<Colaborador | null>(null);
 
-  const [newHardSkill, setNewHardSkill] = useState("");
-  const [newSoftSkill, setNewSoftSkill] = useState("");
+  /**
+   * Lida com mudanças nos inputs do perfil durante a edição.
+   */
+  const aoMudarPerfil = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!colaborador) return;
+    const { name, value } = e.target;
+    setColaborador({
+      ...colaborador,
+      [name]: value,
+    });
+  };
 
+  /**
+   * Ativa o modo de edição e salva o estado original do colaborador.
+   */
+  const aoEditar = () => {
+    setColaboradorOriginal(colaborador);
+    setEmEdicao(true);
+  };
+
+  /**
+   * Cancela a edição e restaura o estado original do colaborador.
+   */
+  const aoCancelar = () => {
+    setColaborador(colaboradorOriginal);
+    setEmEdicao(false);
+  };
+
+  /**
+   * Salva as alterações do perfil no backend.
+   */
+  const aoSalvar = async () => {
+    if (!colaborador) return;
+    try {
+      const response = await fetch(`/api/colaborador/${colaborador.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(colaborador),
+      });
+      if (!response.ok) {
+        throw new Error('Falha ao salvar o perfil.');
+      }
+      const colaboradorAtualizado = await response.json();
+      setColaborador(colaboradorAtualizado);
+      setEmEdicao(false);
+      setColaboradorOriginal(null);
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao salvar as alterações. Tente novamente.");
+    }
+  };
+
+  // Efeito para gerenciar o tema escuro
   useEffect(() => {
     const root = document.documentElement;
-    if (darkMode) {
+    if (modoEscuro) {
       root.classList.add("dark");
     } else {
       root.classList.remove("dark");
     }
-  }, [darkMode]);
+  }, [modoEscuro]);
 
-  const fetchColaborador = async () => {
+  /**
+   * Busca os dados do colaborador na API com base no ID da URL.
+   */
+  const buscarColaborador = async () => {
+    if (!id) return;
+    setCarregando(true);
     try {
-      const response = await fetch('/api/colaborador/1');
+      const response = await fetch(`/api/colaborador/${id}`);
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error('A resposta da rede não foi bem-sucedida.');
       }
       const data: Colaborador = await response.json();
       setColaborador(data);
     } catch (error) {
       if (error instanceof Error) {
-        setError(error.message);
+        setErro(error.message);
       } else {
-        setError("An unknown error occurred");
+        setErro("Ocorreu um erro desconhecido.");
       }
     } finally {
-      setLoading(false);
+      setCarregando(false);
     }
   };
 
+  // Efeito para buscar os dados do colaborador quando o ID da URL muda
   useEffect(() => {
-    fetchColaborador();
-  }, []);
+    buscarColaborador();
+  }, [id]);
 
-  const addHardSkill = async () => {
-    if (newHardSkill.trim() && colaborador) {
-      const newSkill = {
-        nomeCompetencia: newHardSkill.trim(),
+  /**
+   * Adiciona uma nova hard skill para o colaborador.
+   */
+  const adicionarHardSkill = async () => {
+    if (novaHardSkill.trim() && colaborador) {
+      const novaSkill = {
+        nomeCompetencia: novaHardSkill.trim(),
         colaborador: { id: colaborador.id }
       };
       const response = await fetch('/api/hardskill', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSkill),
+        body: JSON.stringify(novaSkill),
       });
       if (response.ok) {
-        const addedSkill = await response.json();
-        setColaborador(prev => prev ? { ...prev, hardSkills: [...prev.hardSkills, addedSkill] } : null);
-        setNewHardSkill("");
+        const skillAdicionada = await response.json();
+        setColaborador(prev => prev ? { ...prev, hardSkills: [...prev.hardSkills, skillAdicionada] } : null);
+        setNovaHardSkill("");
       } else {
-        console.error("Failed to add hard skill");
+        console.error("Falha ao adicionar a hard skill.");
       }
     }
   };
 
-  const addSoftSkill = async () => {
-    if (newSoftSkill.trim() && colaborador) {
-      const newSkill = {
-        nomeCompetencia: newSoftSkill.trim(),
-        colaborador: { id: colaborador.id } // Assuming soft skill also needs collaborator id
+  /**
+   * Adiciona uma nova soft skill para o colaborador.
+   */
+  const adicionarSoftSkill = async () => {
+    if (novaSoftSkill.trim() && colaborador) {
+      const novaSkill = {
+        nomeCompetencia: novaSoftSkill.trim(),
+        colaborador: { id: colaborador.id }
       };
       const response = await fetch('/api/softskill', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSkill),
+        body: JSON.stringify(novaSkill),
       });
       if (response.ok) {
-        const addedSkill = await response.json();
-        setColaborador(prev => prev ? { ...prev, softSkills: [...prev.softSkills, addedSkill] } : null);
-        setNewSoftSkill("");
+        const skillAdicionada = await response.json();
+        setColaborador(prev => prev ? { ...prev, softSkills: [...prev.softSkills, skillAdicionada] } : null);
+        setNovaSoftSkill("");
       } else {
-        console.error("Failed to add soft skill");
+        console.error("Falha ao adicionar a soft skill.");
       }
     }
   };
 
-  const removeHardSkill = async (skillId: number) => {
+  /**
+   * Remove uma hard skill do colaborador.
+   */
+  const removerHardSkill = async (skillId: number) => {
     const response = await fetch(`/api/hardskill/${skillId}`, {
       method: 'DELETE',
     });
     if (response.ok) {
       setColaborador(prev => prev ? { ...prev, hardSkills: prev.hardSkills.filter(s => s.id !== skillId) } : null);
     } else {
-      console.error("Failed to remove hard skill");
+      console.error("Falha ao remover a hard skill.");
     }
   };
 
-  const removeSoftSkill = async (skillId: number) => {
+  /**
+   * Remove uma soft skill do colaborador.
+   */
+  const removerSoftSkill = async (skillId: number) => {
     const response = await fetch(`/api/softskill/${skillId}`, {
       method: 'DELETE',
     });
     if (response.ok) {
       setColaborador(prev => prev ? { ...prev, softSkills: prev.softSkills.filter(s => s.id !== skillId) } : null);
     } else {
-      console.error("Failed to remove soft skill");
+      console.error("Falha ao remover a soft skill.");
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, type: 'hard' | 'soft') => {
+  /**
+   * Lida com o pressionar da tecla Enter para adicionar skills.
+   */
+  const aoPressionarTecla = (e: React.KeyboardEvent<HTMLInputElement>, type: 'hard' | 'soft') => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (type === 'hard') addHardSkill();
-      if (type === 'soft') addSoftSkill();
+      if (type === 'hard') adicionarHardSkill();
+      if (type === 'soft') adicionarSoftSkill();
     }
   };
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  // Renderização condicional enquanto os dados estão sendo carregados
+  if (carregando) {
+    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
   }
 
-  if (error) {
-    return <div className="min-h-screen flex items-center justify-center">Error: {error}</div>;
+  // Renderização condicional em caso de erro
+  if (erro) {
+    return <div className="min-h-screen flex items-center justify-center">Erro: {erro}</div>;
   }
 
+  // Renderização condicional se o colaborador não for encontrado
   if (!colaborador) {
-    return <div className="min-h-screen flex items-center justify-center">No collaborator data found.</div>;
+    return <div className="min-h-screen flex items-center justify-center">Nenhum dado de colaborador encontrado.</div>;
   }
 
   const { nome, email, cargo, apresentacao, certificacoes, experiencias, hardSkills, softSkills } = colaborador;
@@ -192,11 +275,11 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
       <button
-        onClick={() => setDarkMode(v => !v)}
+        onClick={() => setModoEscuro(v => !v)}
         aria-label="Alternar tema"
         className="fixed top-4 right-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:scale-105 transition-transform shadow-lg z-10"
       >
-        {darkMode ? (
+        {modoEscuro ? (
           <Sun className="h-5 w-5 text-yellow-400" />
         ) : (
           <Moon className="h-5 w-5 text-gray-800" />
@@ -214,13 +297,23 @@ export default function Profile() {
 
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{nome}</h1>
+                {emEdicao ? (
+                  <input
+                    type="text"
+                    name="nome"
+                    value={nome}
+                    onChange={aoMudarPerfil}
+                    className="text-3xl font-bold text-gray-800 dark:text-gray-100 bg-transparent border-b-2 border-blue-500 focus:outline-none"
+                  />
+                ) : (
+                  <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{nome}</h1>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-600 dark:text-gray-300">
                 <div className="flex items-center gap-2">
                   <Briefcase className="h-5 w-5 text-blue-500" />
-                  <span>{cargo.nomeCargo}</span>
+                  <span>{cargo?.nomeCargo || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-5 w-5 text-blue-500" />
@@ -229,10 +322,21 @@ export default function Profile() {
               </div>
             </div>
 
-            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg">
-              <Edit3 className="h-4 w-4" />
-              Editar Perfil
-            </button>
+            {emEdicao ? (
+              <div className="flex gap-2">
+                <button onClick={aoSalvar} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg">
+                  Salvar
+                </button>
+                <button onClick={aoCancelar} className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg">
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button onClick={aoEditar} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg">
+                <Edit3 className="h-4 w-4" />
+                Editar Perfil
+              </button>
+            )}
           </div>
         </div>
 
@@ -243,9 +347,18 @@ export default function Profile() {
                 <User className="h-6 w-6 text-blue-500" />
                 <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Sobre mim</h2>
               </div>
-              <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm">
-                {apresentacao}
-              </p>
+              {emEdicao ? (
+                <textarea
+                  name="apresentacao"
+                  value={apresentacao}
+                  onChange={aoMudarPerfil}
+                  className="w-full h-40 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm"
+                />
+              ) : (
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm">
+                  {apresentacao}
+                </p>
+              )}
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-gray-700">
@@ -277,7 +390,7 @@ export default function Profile() {
                 >
                   {skill.nomeCompetencia}
                   <button
-                    onClick={() => removeHardSkill(skill.id)}
+                    onClick={() => removerHardSkill(skill.id)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                     type="button"
                   >
@@ -290,13 +403,13 @@ export default function Profile() {
               <input
                 type="text"
                 placeholder="Adicionar Hard Skill..."
-                value={newHardSkill}
-                onChange={(e) => setNewHardSkill(e.target.value)}
-                onKeyPress={(e) => handleKeyPress(e, 'hard')}
+                value={novaHardSkill}
+                onChange={(e) => setNovaHardSkill(e.target.value)}
+                onKeyPress={(e) => aoPressionarTecla(e, 'hard')}
                 className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-sm"
               />
               <button
-                onClick={addHardSkill}
+                onClick={adicionarHardSkill}
                 type="button"
                 className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors shadow-lg"
               >
@@ -318,7 +431,7 @@ export default function Profile() {
                 >
                   {skill.nomeCompetencia}
                   <button
-                    onClick={() => removeSoftSkill(skill.id)}
+                    onClick={() => removerSoftSkill(skill.id)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                     type="button"
                   >
@@ -331,13 +444,13 @@ export default function Profile() {
               <input
                 type="text"
                 placeholder="Adicionar Soft Skill..."
-                value={newSoftSkill}
-                onChange={(e) => setNewSoftSkill(e.target.value)}
-                onKeyPress={(e) => handleKeyPress(e, 'soft')}
+                value={novaSoftSkill}
+                onChange={(e) => setNovaSoftSkill(e.target.value)}
+                onKeyPress={(e) => aoPressionarTecla(e, 'soft')}
                 className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-sm"
               />
               <button
-                onClick={addSoftSkill}
+                onClick={adicionarSoftSkill}
                 type="button"
                 className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors shadow-lg"
               >
