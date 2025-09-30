@@ -8,9 +8,18 @@ const colaboradoresMock = [
   { id: 3, nome: 'Carlos Pereira', cargo: { nomeCargo: 'Designer UX' }, email: 'carlos.pereira@altave.com.br' },
 ];
 
+interface Colaborador {
+  id: number;
+  nome: string;
+  cargo: {
+    nomeCargo: string;
+  } | null;
+  email: string;
+}
+
 export default function VisaoColaboradores() {
-  const [listaColaboradores, setListaColaboradores] = useState([]);
-  const [colaboradorSelecionado, setColaboradorSelecionado] = useState(null);
+  const [listaColaboradores, setListaColaboradores] = useState<Colaborador[]>([]);
+  const [colaboradorSelecionado, setColaboradorSelecionado] = useState<Colaborador | null>(null);
   const [termoBusca, setTermoBusca] = useState('');
   const [carregando, setCarregando] = useState(true);
 
