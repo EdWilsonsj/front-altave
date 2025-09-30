@@ -4,7 +4,14 @@ import VisaoColaboradores from '../components/dashboard/VisaoColaboradores';
 import VisaoCompetencias from '../components/dashboard/VisaoCompetencias';
 
 // Componente de Navegação Lateral
-const NavItem = ({ icone: Icone, texto, ativo, onClick }) => (
+interface NavItemProps {
+  icone: React.ElementType;
+  texto: string;
+  ativo: boolean;
+  onClick: () => void;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ icone: Icone, texto, ativo, onClick }) => (
   <li
     className={`flex items-center p-4 cursor-pointer transition-colors duration-200 ${
       ativo

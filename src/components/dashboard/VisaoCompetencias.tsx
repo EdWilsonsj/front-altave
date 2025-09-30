@@ -9,8 +9,24 @@ const dadosGraficoMock = [
   { setor: 'Gestão', Scrum: 7, Lideranca: 8, Budget: 6 },
 ];
 
+interface CompetenciaData {
+  setor: string;
+  Java?: number;
+  React?: number;
+  SQL?: number;
+  TestesManuais?: number;
+  Selenium?: number;
+  Jira?: number;
+  Figma?: number;
+  Photoshop?: number;
+  Prototipacao?: number;
+  Scrum?: number;
+  Lideranca?: number;
+  Budget?: number;
+}
+
 export default function VisaoCompetencias() {
-  const [dados, setDados] = useState([]);
+  const [dados, setDados] = useState<CompetenciaData[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   // Função para carregar e processar os dados para o gráfico.
