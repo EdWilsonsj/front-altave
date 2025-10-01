@@ -30,10 +30,10 @@ export default function VisaoCompetencias() {
   const [carregando, setCarregando] = useState(true);
 
   // Função para carregar e processar os dados para o gráfico.
-  // TODO: Substituir o mock pela lógica de busca na API.
+  // ainda temos que ler isso do banco
   const carregarDadosDoGrafico = async () => {
     setCarregando(true);
-    // Simula uma chamada de API e o processamento dos dados.
+   
     setTimeout(() => {
         // A constante `dadosGraficoMock` é usada aqui para fins de demonstração.
         setDados(dadosGraficoMock);

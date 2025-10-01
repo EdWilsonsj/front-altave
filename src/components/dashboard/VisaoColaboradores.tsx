@@ -25,7 +25,7 @@ export default function VisaoColaboradores() {
   const [termoBusca, setTermoBusca] = useState('');
   const [carregando, setCarregando] = useState(true);
 
-  // Função "abrasileirada" para buscar os dados
+
   const pegaTodaAGalerinha = async () => {
     setCarregando(true);
     try {
@@ -33,8 +33,8 @@ export default function VisaoColaboradores() {
       const data = await response.json();
       setListaColaboradores(data);
     } catch (erro) {
-      console.error("Deu ruim ao buscar colaboradores:", erro);
-      // Opcional: mostrar um estado de erro na tela
+      console.error("Falha ao buscar colaboradores:", erro);
+      // mostrar um estado de erro na tela no futuro
     } finally {
       setCarregando(false);
     }
@@ -51,7 +51,7 @@ export default function VisaoColaboradores() {
 
   return (
     <div className="h-full flex flex-col gap-6">
-      {/* Cabeçalho e Barra de Busca */}
+    
       <div>
         <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Visão de Colaboradores</h2>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Pesquise e visualize os perfis dos colaboradores.</p>
@@ -103,7 +103,7 @@ export default function VisaoColaboradores() {
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{colaboradorSelecionado.email}</p>
                     </div>
                 </div>
-                {/* Aqui podem ser adicionados mais detalhes do colaborador */}
+        
                 <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <h4 className="text-lg font-semibold mb-4">Ações</h4>
                     <button 
@@ -119,7 +119,7 @@ export default function VisaoColaboradores() {
             <div className="h-full flex flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400">
               <User className="h-16 w-16 mb-4" />
               <h3 className="text-xl font-semibold">Selecione um colaborador</h3>
-              <p>Clique em um nome na lista para ver os detalhes aqui.</p>
+              <p>Clique em um nome na lista para ver os detalhes.</p>
             </div>
           )}
         </div>
