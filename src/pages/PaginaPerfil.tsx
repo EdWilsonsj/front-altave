@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { 
   User, 
   Mail, 
   Briefcase, 
-  MapPin, 
-  Calendar, 
   Award, 
   Code, 
   Plus, 
@@ -15,11 +13,8 @@ import {
   Sun, 
   Moon,
   Edit3,
-  Target,
   BookOpen,
-  Heart,
-  Building,
-  Star
+  Heart
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
@@ -58,6 +53,7 @@ interface Colaborador {
   nome: string;
   email: string;
   apresentacao: string;
+  perfil: number;
   cargo: Cargo;
   certificacoes: Certificacao[];
   experiencias: Experiencia[];
@@ -396,7 +392,7 @@ export default function PaginaPerfil() {
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                     type="button"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3 w-3 text-blue-900 dark:text-blue-100" />
                   </button>
                 </span>
               ))}
@@ -437,7 +433,7 @@ export default function PaginaPerfil() {
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                     type="button"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3 w-3 text-green-900 dark:text-green-100" />
                   </button>
                 </span>
               ))}

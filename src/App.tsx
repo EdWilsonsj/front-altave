@@ -1,5 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
+// Layout
+import SupervisorLayout from "./components/SupervisorLayout";
+
 // Páginas
 import PaginaLogin from "./pages/PaginaLogin";
 import PaginaCadastro from "./pages/PaginaCadastro";
@@ -15,9 +18,14 @@ function App() {
         <Route path="/login" element={<PaginaLogin />} />
         <Route path="/cadastro" element={<PaginaCadastro />} />
 
-        {/* Rotas "Privadas" */}
+        {/* Rota para perfil de usuário normal (sem layout) */}
         <Route path="/profile/:id" element={<PaginaPerfil />} />
-        <Route path="/dashboard" element={<PaginaDashboard />} />
+
+        {/* Rotas de Supervisor (com layout de sidebar) */}
+        <Route element={<SupervisorLayout />}>
+          <Route path="/dashboard" element={<PaginaDashboard />} />
+          <Route path="/supervisor/profile/:id" element={<PaginaPerfil />} />
+        </Route>
 
         {/* Rota coringa para evitar tela branca */}
         <Route path="*" element={<PaginaLogin />} />

@@ -3,12 +3,7 @@ import { Search, User } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
-// Mock de dados, será substituído pela API
-const colaboradoresMock = [
-  { id: 1, nome: 'Pedro Mattos', cargo: { nomeCargo: 'Desenvolvedor Java' }, email: 'pedro.mattos@altave.com.br' },
-  { id: 2, nome: 'Ana Silva', cargo: { nomeCargo: 'Analista de QA' }, email: 'ana.silva@altave.com.br' },
-  { id: 3, nome: 'Carlos Pereira', cargo: { nomeCargo: 'Designer UX' }, email: 'carlos.pereira@altave.com.br' },
-];
+
 
 interface Colaborador {
   id: number;
@@ -43,6 +38,12 @@ export default function VisaoColaboradores() {
   useEffect(() => {
     pegaTodaAGalerinha();
   }, []);
+
+  const handleProfileClick = () => {
+    if (!colaboradorSelecionado) return;
+    const profileId = colaboradorSelecionado.email === 'admin@altave.com.br' ? 1 : colaboradorSelecionado.id;
+    window.open(`/supervisor/profile/${profileId}`, '_blank');
+  };
 
   // Filtra a lista de colaboradores com base no termo de busca
   const colaboradoresFiltrados = listaColaboradores.filter(c => 
@@ -108,7 +109,7 @@ export default function VisaoColaboradores() {
                     <h4 className="text-lg font-semibold mb-4">Ações</h4>
                     <button 
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg"
-                        onClick={() => window.open(`/profile/${colaboradorSelecionado.id}`, '_blank')}
+                        onClick={handleProfileClick}
                     >
                         <User className="h-4 w-4"/>
                         Ver Perfil Completo

@@ -51,8 +51,16 @@ export default function PaginaLogin() {
 
     // Lógica especial para o admin
     if (dadosFormulario.email === 'admin@altave.com') {
-        // Apenas uma verificação de senha simples para o admin, sem chamar a API real
         if (dadosFormulario.password === 'altave123') {
+            const adminColaborador = {
+              id: 1, // ID estático para o admin
+              nome: 'Administrador',
+              email: 'admin@altave.com',
+              perfil: 2, // Perfil de super-admin
+              apresentacao: 'Administrador do sistema.',
+              cargo: { nomeCargo: 'Admin' }
+            };
+            localStorage.setItem('colaborador', JSON.stringify(adminColaborador));
             alert("Bem-vindo, Admin!");
             navegar('/dashboard');
         } else {
@@ -86,8 +94,16 @@ export default function PaginaLogin() {
 
       const colaborador = await colaboradorResponse.json();
 
+      // Salvar dados do colaborador no localStorage
+      localStorage.setItem('colaborador', JSON.stringify(colaborador));
+
       alert("Login realizado com sucesso!");
-      navegar(`/profile/${colaborador.id}`);
+
+      if (colaborador.perfil >= 1) {
+        navegar('/dashboard');
+      } else {
+        navegar(`/profile/${colaborador.id}`);
+      }
 
     } catch (error) {
       if (error instanceof Error) {

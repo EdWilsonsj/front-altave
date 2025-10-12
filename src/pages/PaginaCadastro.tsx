@@ -118,7 +118,8 @@ export default function PaginaCadastro() {
 
     setCarregando(true);
 
-    const { confirmarSenha, telefone, ...dadosUsuario } = dadosFormulario;
+    const dadosParaEnviar = { ...dadosFormulario };
+    delete dadosParaEnviar.confirmarSenha;
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/usuario`, {
@@ -126,7 +127,7 @@ export default function PaginaCadastro() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(dadosUsuario),
+        body: JSON.stringify(dadosParaEnviar),
       });
 
       if (!response.ok) {

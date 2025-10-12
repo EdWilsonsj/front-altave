@@ -2,20 +2,50 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Users, BarChart2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CompetenciasChart from '../components/dashboard/CompetenciasChart';
 import VisaoColaboradores from '../components/dashboard/VisaoColaboradores';
+
+// Interfaces que espelham os modelos do backend
+interface Cargo {
+  nomeCargo: string;
+}
+
+interface Colaborador {
+  id: number;
+  nome: string;
+  email: string;
+  apresentacao: string;
+  perfil: number;
+  cargo: Cargo;
+}
 
 export default function PaginaDashboard() {
   const [numColaboradores, setNumColaboradores] = useState(0);
   const [numCompetencias, setNumCompetencias] = useState(0);
-  const [numDesatualizados, setNumDesatualizados] = useState<number | string>('N/A');
+  const [numDesatualizados, _setNumDesatualizados] = useState<number | string>('N/A');
   const [view, setView] = useState('dashboard'); // 'dashboard' or 'colaboradores'
+  const [colaborador, setColaborador] = useState<Colaborador | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (view === 'dashboard') {
-      // Usando o proxy configurado no vite.config.ts
-      // As requisições para /api serão redirecionadas para http://localhost:8080
+    const storedColaborador = localStorage.getItem('colaborador');
+    if (storedColaborador) {
+      const parsedColaborador = JSON.parse(storedColaborador);
+      if (parsedColaborador.perfil >= 1) {
+        setColaborador(parsedColaborador);
+        setLoading(false);
+      } else {
+        navigate('/login');
+      }
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
 
+  useEffect(() => {
+    if (view === 'dashboard' && colaborador) {
       // Fetch collaborators
       fetch('/api/colaborador')
         .then(response => response.json())
@@ -31,7 +61,11 @@ export default function PaginaDashboard() {
         .then(data => setNumCompetencias(data.length))
         .catch(error => console.error('Error fetching competencies:', error));
     }
-  }, [view]);
+  }, [view, colaborador]);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Verificando acesso...</div>;
+  }
 
   if (view === 'colaboradores') {
     return (
