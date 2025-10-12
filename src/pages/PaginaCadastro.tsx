@@ -118,8 +118,7 @@ export default function PaginaCadastro() {
 
     setCarregando(true);
 
-    const dadosParaEnviar = { ...dadosFormulario };
-    delete dadosParaEnviar.confirmarSenha;
+    const { confirmarSenha, ...dadosParaEnviar } = dadosFormulario;
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/usuario`, {
