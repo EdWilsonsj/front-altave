@@ -16,6 +16,7 @@ import {
   BookOpen,
   Heart
 } from "lucide-react";
+import ComentariosColaborador from '../components/ComentariosColaborador';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -74,6 +75,10 @@ export default function PaginaPerfil() {
   const [novaSoftSkill, setNovaSoftSkill] = useState("");
   const [emEdicao, setEmEdicao] = useState(false);
   const [colaboradorOriginal, setColaboradorOriginal] = useState<Colaborador | null>(null);
+  
+  // Estados para controle de acesso e comentários
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   /**
    * Lida com mudanças nos inputs do perfil durante a edição.
@@ -165,6 +170,20 @@ export default function PaginaPerfil() {
   useEffect(() => {
     buscarColaborador();
   }, [id]);
+
+  // Efeito para verificar se o usuário é admin
+  useEffect(() => {
+    const storedUsuario = localStorage.getItem('usuario');
+    const storedColaborador = localStorage.getItem('colaborador');
+    
+    if (storedUsuario && storedColaborador) {
+      const parsedUsuario = JSON.parse(storedUsuario);
+      const parsedColaborador = JSON.parse(storedColaborador);
+      
+      setIsAdmin(parsedUsuario.role === 'ADMIN');
+      setCurrentUserId(parsedColaborador.id);
+    }
+  }, []);
 
   /**
    * Adiciona uma nova hard skill para o colaborador.
@@ -473,6 +492,13 @@ export default function PaginaPerfil() {
                 ))}
             </div>
         </div>
+
+        {/* Seção de Comentários */}
+        <ComentariosColaborador 
+          colaboradorId={colaborador.id}
+          isAdmin={isAdmin}
+          currentUserId={currentUserId || undefined}
+        />
 
         <div className="text-center py-6">
           <p className="text-sm text-gray-500 dark:text-gray-400">

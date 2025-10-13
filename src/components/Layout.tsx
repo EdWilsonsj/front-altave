@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 
+interface Usuario {
+  id: number;
+  role: string;
+}
+
 interface Colaborador {
   id: number;
   perfil: number;
@@ -13,17 +18,22 @@ const Layout: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const storedUsuario = localStorage.getItem('usuario');
     const storedColaborador = localStorage.getItem('colaborador');
-    if (storedColaborador) {
-      const parsedColaborador = JSON.parse(storedColaborador);
-      if (parsedColaborador.perfil >= 1) {
+    
+    if (storedUsuario && storedColaborador) {
+      const parsedUsuario: Usuario = JSON.parse(storedUsuario);
+      const parsedColaborador: Colaborador = JSON.parse(storedColaborador);
+      
+      // Apenas usuários ADMIN podem acessar o layout com sidebar
+      if (parsedUsuario.role === 'ADMIN') {
         setColaborador(parsedColaborador);
       } else {
-        // Not a supervisor, redirect to their own profile
+        // Redireciona usuários não-admin para seu perfil
         navigate(`/profile/${parsedColaborador.id}`);
       }
     } else {
-      // No user data, redirect to login
+      // Sem dados de usuário, redireciona para login
       navigate('/login');
     }
     setLoading(false);

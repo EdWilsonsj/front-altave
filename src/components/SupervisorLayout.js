@@ -7,20 +7,34 @@ const SupervisorLayout = () => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     useEffect(() => {
+        const storedUsuario = localStorage.getItem('usuario');
         const storedColaborador = localStorage.getItem('colaborador');
-        if (storedColaborador) {
+        console.log('=== SUPERVISOR LAYOUT DEBUG ===');
+        console.log('storedUsuario:', storedUsuario);
+        console.log('storedColaborador:', storedColaborador);
+        if (storedUsuario && storedColaborador) {
+            const parsedUsuario = JSON.parse(storedUsuario);
             const parsedColaborador = JSON.parse(storedColaborador);
-            if (parsedColaborador.perfil >= 1) {
+            console.log('parsedUsuario:', parsedUsuario);
+            console.log('parsedUsuario.role:', parsedUsuario.role);
+            console.log('parsedColaborador:', parsedColaborador);
+            // Apenas usuários ADMIN podem acessar o layout de supervisor
+            if (parsedUsuario.role === 'ADMIN') {
+                console.log('USUÁRIO É ADMIN - Permitindo acesso ao dashboard');
                 setColaborador(parsedColaborador);
             }
             else {
-                // Should not happen if login navigation is correct, but as a safeguard:
+                console.log(`USUÁRIO NÃO É ADMIN (role: ${parsedUsuario.role}) - Redirecionando para profile`);
+                // Redireciona usuários não-admin para seu perfil
                 navigate(`/profile/${parsedColaborador.id}`);
             }
         }
         else {
+            console.log('SEM DADOS DE USUÁRIO - Redirecionando para login');
+            // Sem dados de usuário, redireciona para login
             navigate('/login');
         }
+        console.log('===============================');
         setLoading(false);
     }, [navigate]);
     if (loading || !colaborador) {

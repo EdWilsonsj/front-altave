@@ -40,3 +40,14 @@ secrets.yml
 secrets.json
 *token*
 *password*
+
+# Debug files
+debug-*
+test-*
+*.debug.html
+*.test.html
+
+# Temporary files
+temp/
+tmp/
+*.tmp

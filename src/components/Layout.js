@@ -7,19 +7,22 @@ const Layout = () => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     useEffect(() => {
+        const storedUsuario = localStorage.getItem('usuario');
         const storedColaborador = localStorage.getItem('colaborador');
-        if (storedColaborador) {
+        if (storedUsuario && storedColaborador) {
+            const parsedUsuario = JSON.parse(storedUsuario);
             const parsedColaborador = JSON.parse(storedColaborador);
-            if (parsedColaborador.perfil >= 1) {
+            // Apenas usuários ADMIN podem acessar o layout com sidebar
+            if (parsedUsuario.role === 'ADMIN') {
                 setColaborador(parsedColaborador);
             }
             else {
-                // Not a supervisor, redirect to their own profile
+                // Redireciona usuários não-admin para seu perfil
                 navigate(`/profile/${parsedColaborador.id}`);
             }
         }
         else {
-            // No user data, redirect to login
+            // Sem dados de usuário, redireciona para login
             navigate('/login');
         }
         setLoading(false);

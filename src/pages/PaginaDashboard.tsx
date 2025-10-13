@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import CompetenciasChart from '../components/dashboard/CompetenciasChart';
 import VisaoColaboradores from '../components/dashboard/VisaoColaboradores';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 // Interfaces que espelham os modelos do backend
 interface Cargo {
   nomeCargo: string;
@@ -30,14 +32,20 @@ export default function PaginaDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const storedUsuario = localStorage.getItem('usuario');
     const storedColaborador = localStorage.getItem('colaborador');
-    if (storedColaborador) {
+    
+    if (storedUsuario && storedColaborador) {
+      const parsedUsuario = JSON.parse(storedUsuario);
       const parsedColaborador = JSON.parse(storedColaborador);
-      if (parsedColaborador.perfil >= 1) {
+      
+      // Apenas usuários ADMIN podem acessar o dashboard
+      if (parsedUsuario.role === 'ADMIN') {
         setColaborador(parsedColaborador);
         setLoading(false);
       } else {
-        navigate('/login');
+        // Redireciona usuários não-admin para seu perfil
+        navigate(`/profile/${parsedColaborador.id}`);
       }
     } else {
       navigate('/login');
@@ -46,20 +54,38 @@ export default function PaginaDashboard() {
 
   useEffect(() => {
     if (view === 'dashboard' && colaborador) {
+      console.log('Carregando dados do dashboard...');
+      
       // Fetch collaborators
-      fetch('/api/colaborador')
-        .then(response => response.json())
+      fetch(`${API_BASE_URL}/api/colaborador`)
+        .then(response => {
+          console.log('Response colaboradores:', response.status);
+          return response.json();
+        })
         .then(data => {
+          console.log('Dados colaboradores:', data);
           setNumColaboradores(data.length);
           // TODO: Implementar a lógica de desatualizados
         })
-        .catch(error => console.error('Error fetching collaborators:', error));
+        .catch(error => {
+          console.error('Erro ao buscar colaboradores:', error);
+          setNumColaboradores(0);
+        });
 
       // Fetch competencies
-      fetch('/api/competencia')
-        .then(response => response.json())
-        .then(data => setNumCompetencias(data.length))
-        .catch(error => console.error('Error fetching competencies:', error));
+      fetch(`${API_BASE_URL}/api/competencia`)
+        .then(response => {
+          console.log('Response competências:', response.status);
+          return response.json();
+        })
+        .then(data => {
+          console.log('Dados competências:', data);
+          setNumCompetencias(data.length);
+        })
+        .catch(error => {
+          console.error('Erro ao buscar competências:', error);
+          setNumCompetencias(0);
+        });
     }
   }, [view, colaborador]);
 

@@ -49,28 +49,7 @@ export default function PaginaLogin() {
     e.preventDefault();
     setCarregando(true);
 
-    // Lógica especial para o admin
-    if (dadosFormulario.email === 'admin@altave.com') {
-        if (dadosFormulario.password === 'altave123') {
-            const adminColaborador = {
-              id: 1, // ID estático para o admin
-              nome: 'Administrador',
-              email: 'admin@altave.com',
-              perfil: 2, // Perfil de super-admin
-              apresentacao: 'Administrador do sistema.',
-              cargo: { nomeCargo: 'Admin' }
-            };
-            localStorage.setItem('colaborador', JSON.stringify(adminColaborador));
-            alert("Bem-vindo, Admin!");
-            navegar('/dashboard');
-        } else {
-            alert('Senha de administrador incorreta.');
-            setCarregando(false);
-        }
-        return;
-    }
-
-    // Lógica para usuários normais
+    // Lógica unificada para todos os usuários
     try {
       const loginResponse = await fetch(`${API_BASE_URL}/api/usuario/login`, {
         method: 'POST',
@@ -94,12 +73,14 @@ export default function PaginaLogin() {
 
       const colaborador = await colaboradorResponse.json();
 
-      // Salvar dados do colaborador no localStorage
+      // Salvar dados do usuário (com role) e colaborador no localStorage
+      localStorage.setItem('usuario', JSON.stringify(usuario));
       localStorage.setItem('colaborador', JSON.stringify(colaborador));
 
       alert("Login realizado com sucesso!");
 
-      if (colaborador.perfil >= 1) {
+      // Redirecionamento baseado na role do usuário
+      if (usuario.role === 'ADMIN') {
         navegar('/dashboard');
       } else {
         navegar(`/profile/${colaborador.id}`);
