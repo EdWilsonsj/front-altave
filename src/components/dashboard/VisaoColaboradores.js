@@ -1,8 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, useEffect } from 'react';
 import { Search, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 export default function VisaoColaboradores() {
+    const navigate = useNavigate();
     const [listaColaboradores, setListaColaboradores] = useState([]);
     const [colaboradorSelecionado, setColaboradorSelecionado] = useState(null);
     const [termoBusca, setTermoBusca] = useState('');
@@ -29,7 +31,7 @@ export default function VisaoColaboradores() {
         if (!colaboradorSelecionado)
             return;
         const profileId = colaboradorSelecionado.email === 'admin@altave.com.br' ? 1 : colaboradorSelecionado.id;
-        window.open(`/supervisor/profile/${profileId}`, '_blank');
+        navigate(`/supervisor/profile/${profileId}`);
     };
     // Filtra a lista de colaboradores com base no termo de busca
     const colaboradoresFiltrados = listaColaboradores.filter(c => c.nome.toLowerCase().includes(termoBusca.toLowerCase()));

@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Users, BarChart2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import CompetenciasChart from '../components/dashboard/CompetenciasChart';
 import VisaoColaboradores from '../components/dashboard/VisaoColaboradores';
 
@@ -27,30 +27,7 @@ export default function PaginaDashboard() {
   const [numCompetencias, setNumCompetencias] = useState(0);
   const [numDesatualizados, _setNumDesatualizados] = useState<number | string>('N/A');
   const [view, setView] = useState('dashboard'); // 'dashboard' or 'colaboradores'
-  const [colaborador, setColaborador] = useState<Colaborador | null>(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const storedUsuario = localStorage.getItem('usuario');
-    const storedColaborador = localStorage.getItem('colaborador');
-    
-    if (storedUsuario && storedColaborador) {
-      const parsedUsuario = JSON.parse(storedUsuario);
-      const parsedColaborador = JSON.parse(storedColaborador);
-      
-      // Apenas usuários ADMIN podem acessar o dashboard
-      if (parsedUsuario.role === 'ADMIN') {
-        setColaborador(parsedColaborador);
-        setLoading(false);
-      } else {
-        // Redireciona usuários não-admin para seu perfil
-        navigate(`/profile/${parsedColaborador.id}`);
-      }
-    } else {
-      navigate('/login');
-    }
-  }, [navigate]);
+  const { colaborador } = useAuth();
 
   useEffect(() => {
     if (view === 'dashboard' && colaborador) {
@@ -89,9 +66,7 @@ export default function PaginaDashboard() {
     }
   }, [view, colaborador]);
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Verificando acesso...</div>;
-  }
+  // O ProtectedRoute já garante que o usuário é admin e está autenticado
 
   if (view === 'colaboradores') {
     return (

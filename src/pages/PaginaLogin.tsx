@@ -1,19 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, Sun, Moon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 
 export default function PaginaLogin() {
-  // Hook para navegação entre as páginas
+  // Hooks
   const navegar = useNavigate();
+  const location = useLocation();
+  const { login, isAuthenticated, isAdmin, colaborador } = useAuth();
 
   // Estado para controlar o tema escuro, inicializado com o valor do localStorage
   const [modoEscuro, setModoEscuro] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("theme") === "dark";
   });
+
+  // Redirecionar usuário já autenticado (validação já foi feita no AuthContext)
+  useEffect(() => {
+    if (isAuthenticated && colaborador) {
+      const from = location.state?.from?.pathname || (isAdmin ? '/dashboard' : `/profile/${colaborador.id}`);
+      navegar(from, { replace: true });
+    }
+  }, [isAuthenticated, isAdmin, colaborador, navegar, location]);
 
   // Efeito para aplicar a classe 'dark' ao HTML e salvar a preferência no localStorage
   useEffect(() => {
@@ -39,6 +50,15 @@ export default function PaginaLogin() {
   const aoMudarInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setDadosFormulario((prev) => ({ ...prev, [name]: value }));
+  };
+
+  /**
+   * Limpa manualmente a sessão local se houver problemas.
+   */
+  const limparSessao = () => {
+    localStorage.removeItem('usuario');
+    localStorage.removeItem('colaborador');
+    window.location.reload();
   };
 
   /**
@@ -71,20 +91,15 @@ export default function PaginaLogin() {
         throw new Error('Perfil de colaborador não encontrado para este usuário.');
       }
 
-      const colaborador = await colaboradorResponse.json();
+      const colaboradorData = await colaboradorResponse.json();
 
-      // Salvar dados do usuário (com role) e colaborador no localStorage
-      localStorage.setItem('usuario', JSON.stringify(usuario));
-      localStorage.setItem('colaborador', JSON.stringify(colaborador));
+      // Usar o contexto de autenticação para fazer login
+      login(usuario, colaboradorData);
 
       alert("Login realizado com sucesso!");
 
-      // Redirecionamento baseado na role do usuário
-      if (usuario.role === 'ADMIN') {
-        navegar('/dashboard');
-      } else {
-        navegar(`/profile/${colaborador.id}`);
-      }
+      // O redirecionamento será feito automaticamente pelo useEffect
+      // que detecta a mudança no estado de autenticação
 
     } catch (error) {
       if (error instanceof Error) {
@@ -101,17 +116,29 @@ export default function PaginaLogin() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
-      <button
-        onClick={() => setModoEscuro((v) => !v)}
-        aria-label="Alternar tema"
-        className="absolute top-4 left-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:scale-105 transition-transform shadow"
-      >
-        {modoEscuro ? (
-          <Sun className="h-5 w-5 text-yellow-400" />
-        ) : (
-          <Moon className="h-5 w-5 text-gray-800" />
+      <div className="absolute top-4 left-4 flex gap-2">
+        <button
+          onClick={() => setModoEscuro((v) => !v)}
+          aria-label="Alternar tema"
+          className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:scale-105 transition-transform shadow"
+        >
+          {modoEscuro ? (
+            <Sun className="h-5 w-5 text-yellow-400" />
+          ) : (
+            <Moon className="h-5 w-5 text-gray-800" />
+          )}
+        </button>
+        
+        {isAuthenticated && (
+          <button
+            onClick={limparSessao}
+            title="Limpar sessão e recarregar"
+            className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white hover:scale-105 transition-all shadow text-xs"
+          >
+            🔄
+          </button>
         )}
-      </button>
+      </div>
 
       <div className="w-full max-w-lg">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-blue-100 dark:border-gray-700">

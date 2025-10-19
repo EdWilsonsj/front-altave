@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Users, BarChart2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import CompetenciasChart from '../components/dashboard/CompetenciasChart';
 import VisaoColaboradores from '../components/dashboard/VisaoColaboradores';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
@@ -12,29 +12,7 @@ export default function PaginaDashboard() {
     const [numCompetencias, setNumCompetencias] = useState(0);
     const [numDesatualizados, _setNumDesatualizados] = useState('N/A');
     const [view, setView] = useState('dashboard'); // 'dashboard' or 'colaboradores'
-    const [colaborador, setColaborador] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
-    useEffect(() => {
-        const storedUsuario = localStorage.getItem('usuario');
-        const storedColaborador = localStorage.getItem('colaborador');
-        if (storedUsuario && storedColaborador) {
-            const parsedUsuario = JSON.parse(storedUsuario);
-            const parsedColaborador = JSON.parse(storedColaborador);
-            // Apenas usuários ADMIN podem acessar o dashboard
-            if (parsedUsuario.role === 'ADMIN') {
-                setColaborador(parsedColaborador);
-                setLoading(false);
-            }
-            else {
-                // Redireciona usuários não-admin para seu perfil
-                navigate(`/profile/${parsedColaborador.id}`);
-            }
-        }
-        else {
-            navigate('/login');
-        }
-    }, [navigate]);
+    const { colaborador } = useAuth();
     useEffect(() => {
         if (view === 'dashboard' && colaborador) {
             console.log('Carregando dados do dashboard...');
@@ -69,9 +47,7 @@ export default function PaginaDashboard() {
             });
         }
     }, [view, colaborador]);
-    if (loading) {
-        return _jsx("div", { className: "min-h-screen flex items-center justify-center", children: "Verificando acesso..." });
-    }
+    // O ProtectedRoute já garante que o usuário é admin e está autenticado
     if (view === 'colaboradores') {
         return (_jsxs("div", { className: "p-8", children: [_jsxs(Button, { onClick: () => setView('dashboard'), className: "mb-4 bg-gray-600 hover:bg-gray-700 text-white", children: [_jsx(ArrowLeft, { className: "mr-2 h-4 w-4" }), "Voltar ao Dashboard"] }), _jsx(VisaoColaboradores, {})] }));
     }

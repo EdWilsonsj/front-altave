@@ -1,3 +1,41 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+build
+
+# Environment files - NUNCA commitar
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+.env.test
+.env.example
+
+# Configuration files - NUNCA commitar  
+application*.properties
+config.json
+config.js
+settings.json
+
+# Secrets and credentials - NUNCA commitar
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*
+secrets*
+*secret*
+*token*
+*password*
+*api-key*
+*apikey*
+*.crt
+*.cer
+
 # Logs
 logs
 *.log
@@ -7,10 +45,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Runtime files
 *.local
+*.pid
+*.seed
+*.pid.lock
 
 # Editor directories and files
 .vscode/*
@@ -22,26 +61,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-*.env
 
-# Ignorar arquivos de configuração locais
-application-local.properties
-application-production.properties
-application-development.properties
-application.properties
+# Compiled JavaScript (manter apenas TypeScript)
+src/**/*.js
+src/**/*.js.map
 
-# Secrets
-*.pem
-*.key
-*.p12
-*.pfx
-credentials*
-secrets.yml
-secrets.json
-*token*
-*password*
-
-# Debug files
+# Debug and test files
 debug-*
 test-*
 *.debug.html

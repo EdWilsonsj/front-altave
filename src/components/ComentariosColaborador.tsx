@@ -146,7 +146,7 @@ const ComentariosColaborador: React.FC<ComentariosColaboradorProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-blue-600" />
+            <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             Comentários de Gestores ({comentarios.length})
           </CardTitle>
           {isAdmin && currentUserId && (
@@ -165,11 +165,11 @@ const ComentariosColaborador: React.FC<ComentariosColaboradorProps> = ({
       <CardContent>
         {/* Formulário para novo comentário */}
         {showForm && isAdmin && (
-          <Card className="mb-4 border-blue-200">
+          <Card className="mb-4 border-blue-200 dark:border-blue-800">
             <CardContent className="p-4">
               <form onSubmit={handleSubmitComentario} className="space-y-4">
                 <div>
-                  <label htmlFor="comentario" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="comentario" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Novo Comentário:
                   </label>
                   <textarea
@@ -177,12 +177,12 @@ const ComentariosColaborador: React.FC<ComentariosColaboradorProps> = ({
                     value={novoComentario}
                     onChange={(e) => setNovoComentario(e.target.value)}
                     placeholder="Digite seu comentário sobre este colaborador..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                     rows={3}
                     maxLength={500}
                     required
                   />
-                  <div className="text-right text-sm text-gray-500 mt-1">
+                  <div className="text-right text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {novoComentario.length}/500
                   </div>
                 </div>
@@ -213,29 +213,29 @@ const ComentariosColaborador: React.FC<ComentariosColaboradorProps> = ({
 
         {/* Lista de comentários */}
         {comentarios.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <MessageSquare className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-lg font-medium">Nenhum comentário ainda</p>
-            <p className="text-sm">Este colaborador ainda não recebeu comentários de gestores.</p>
+          <div className="text-center py-8 text-gray-500 dark:text-gray-300">
+            <MessageSquare className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+            <p className="text-lg font-medium text-gray-700 dark:text-white">Nenhum comentário ainda</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Este colaborador ainda não recebeu comentários de gestores.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {comentarios.map((comentario) => (
-              <Card key={comentario.idComentario} className="border-l-4 border-l-blue-500">
+              <Card key={comentario.idComentario} className="border-l-4 border-l-blue-500 dark:border-l-blue-400">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-500" />
-                      <span className="font-medium text-gray-900">
+                      <User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <span className="font-medium text-gray-900 dark:text-white">
                         {comentario.nomeColaboradorOrigem || 'Gestor'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 text-sm text-gray-500">
+                    <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-300">
                       <Calendar className="h-4 w-4" />
                       {formatDate(comentario.dataComentario)}
                     </div>
                   </div>
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-gray-700 dark:text-white leading-relaxed">
                     {comentario.textoComentario}
                   </p>
                 </CardContent>
