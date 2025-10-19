@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // Context
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -31,50 +31,50 @@ function AppContent() {
   }
 
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
-          {/* Rotas Públicas */}
-          <Route path="/" element={<PaginaLogin />} />
-          <Route path="/login" element={<PaginaLogin />} />
-          <Route path="/cadastro" element={<PaginaCadastro />} />
+        {/* Rotas Públicas */}
+        <Route path="/" element={<PaginaLogin />} />
+        <Route path="/login" element={<PaginaLogin />} />
+        <Route path="/cadastro" element={<PaginaCadastro />} />
 
-          {/* Rota para perfil de usuário (protegida) */}
-          <Route 
-            path="/profile/:id" 
-            element={
-              <ProtectedRoute>
+        {/* Rota para perfil de usuário (protegida) */}
+        <Route 
+          path="/profile/:id" 
+          element={
+            <ProtectedRoute>
+              <PaginaPerfil />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Rotas de Supervisor (protegidas e requerem admin) */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <SupervisorLayout>
+                <PaginaDashboard />
+              </SupervisorLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/supervisor/profile/:id" 
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <SupervisorLayout>
                 <PaginaPerfil />
-              </ProtectedRoute>
-            } 
-          />
+              </SupervisorLayout>
+            </ProtectedRoute>
+          } 
+        />
 
-          {/* Rotas de Supervisor (protegidas e requerem admin) */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <SupervisorLayout>
-                  <PaginaDashboard />
-                </SupervisorLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/supervisor/profile/:id" 
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <SupervisorLayout>
-                  <PaginaPerfil />
-                </SupervisorLayout>
-              </ProtectedRoute>
-            } 
-          />
-
-          {/* Rota coringa para evitar tela branca */}
-          <Route path="*" element={<PaginaLogin />} />
-        </Routes>
-      </Router>
-    );
+        {/* Rota coringa para evitar tela branca */}
+        <Route path="*" element={<PaginaLogin />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 function App() {
