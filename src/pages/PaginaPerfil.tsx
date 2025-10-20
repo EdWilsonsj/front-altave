@@ -87,6 +87,64 @@ export default function PaginaPerfil() {
   const { logout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Função auxiliar para buscar experiências do colaborador
+   */
+  const buscarExperienciasColaborador = async (colaboradorId: number): Promise<Experiencia[]> => {
+    try {
+      // Tentar API específica do colaborador primeiro
+      const responseEspecifica = await fetch(`${API_BASE_URL}/api/colaborador/${colaboradorId}/experiencias`);
+      if (responseEspecifica.ok) {
+        const experiencias = await responseEspecifica.json();
+        return Array.isArray(experiencias) ? experiencias : [];
+      }
+    } catch (error) {
+      // Continuar para próxima estratégia
+    }
+    
+    try {
+      // Buscar todas e filtrar
+      const responseGeral = await fetch(`${API_BASE_URL}/api/experiencia`);
+      if (responseGeral.ok) {
+        const todasExperiencias = await responseGeral.json();
+        
+        if (!Array.isArray(todasExperiencias)) {
+          return [];
+        }
+        
+        // Filtrar experiências do colaborador
+        const experienciasFiltradas = todasExperiencias.filter((exp: any) => {
+          if (!exp || !exp.colaborador) return false;
+          
+          const expColabId = exp.colaborador.id;
+          return expColabId === colaboradorId ||
+                 expColabId === colaboradorId.toString() ||
+                 parseInt(expColabId) === colaboradorId ||
+                 expColabId?.toString() === colaboradorId.toString();
+        });
+        
+        return experienciasFiltradas;
+      }
+    } catch (error) {
+      // Continuar para próxima estratégia
+    }
+    
+    // Buscar através do endpoint do colaborador
+    try {
+      const responseColaborador = await fetch(`${API_BASE_URL}/api/colaborador/${colaboradorId}`);
+      if (responseColaborador.ok) {
+        const colaboradorData = await responseColaborador.json();
+        if (colaboradorData.experiencias && Array.isArray(colaboradorData.experiencias)) {
+          return colaboradorData.experiencias;
+        }
+      }
+    } catch (error) {
+      // Falhou em todas as estratégias
+    }
+    
+    return [];
+  };
+
   // Estados do componente
   const [modoEscuro, setModoEscuro] = useState(false);
   const [colaborador, setColaborador] = useState<Colaborador | null>(null);
@@ -135,7 +193,7 @@ export default function PaginaPerfil() {
       await logout();
       navigate('/login');
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+      // Erro ao fazer logout
     }
   };
 
@@ -173,7 +231,6 @@ export default function PaginaPerfil() {
         alert('Erro ao fazer upload da foto');
       }
     } catch (error) {
-      console.error('Erro no upload:', error);
       alert('Erro ao fazer upload da foto');
     }
   };
@@ -241,7 +298,6 @@ export default function PaginaPerfil() {
       setEmEdicao(false);
       setColaboradorOriginal(null);
     } catch (error) {
-      console.error(error);
       alert("Erro ao salvar as alterações. Tente novamente.");
     }
   };
@@ -270,27 +326,9 @@ export default function PaginaPerfil() {
       }
       const data: Colaborador = await response.json();
       
-      // Buscar experiências do colaborador
-      try {
-        const expResponse = await fetch(`${API_BASE_URL}/api/experiencia`);
-        if (expResponse.ok) {
-          const todasExperiencias = await expResponse.json();
-          const colaboradorId = parseInt(id);
-          
-          // Filtrar experiências do colaborador atual
-          data.experiencias = todasExperiencias.filter((exp: any) => {
-            return exp.colaborador?.id === colaboradorId;
-          });
-          
-          console.log(`📋 Carregadas ${data.experiencias.length} experiências para colaborador ${colaboradorId}`);
-        } else {
-          console.error('Erro ao buscar experiências:', expResponse.status);
-          data.experiencias = [];
-        }
-      } catch (error) {
-        console.error('Erro ao buscar experiências:', error);
-        data.experiencias = [];
-      }
+      // Buscar experiências do colaborador usando função auxiliar
+      const colaboradorId = parseInt(id);
+      data.experiencias = await buscarExperienciasColaborador(colaboradorId);
       
       // Corrigir codificação nas soft skills e hard skills
       if (data.softSkills) {
@@ -345,7 +383,7 @@ export default function PaginaPerfil() {
                 return { ...comentario, nomeColaboradorOrigem: colaboradorOrigem.nome };
               }
             } catch (error) {
-              console.error('Erro ao buscar colaborador:', error);
+              // Erro ao buscar colaborador
             }
             return { ...comentario, nomeColaboradorOrigem: 'Desconhecido' };
           })
@@ -353,7 +391,7 @@ export default function PaginaPerfil() {
         setComentarios(comentariosComNomes);
       }
     } catch (error) {
-      console.error('Erro ao carregar comentários:', error);
+      // Erro ao carregar comentários
     } finally {
       setCarregandoComentarios(false);
     }
@@ -384,7 +422,6 @@ export default function PaginaPerfil() {
         alert('Erro ao adicionar comentário.');
       }
     } catch (error) {
-      console.error('Erro ao criar comentário:', error);
       alert('Erro ao adicionar comentário.');
     }
   };
@@ -531,7 +568,6 @@ export default function PaginaPerfil() {
     if (!colaborador || !novaExperiencia.cargo || !novaExperiencia.empresa) return;
     
     try {
-      // Estrutura garantindo associação com o colaborador
       const experienciaData = {
         cargo: novaExperiencia.cargo.trim(),
         empresa: novaExperiencia.empresa.trim(),
@@ -540,8 +576,6 @@ export default function PaginaPerfil() {
         colaborador: { id: colaborador.id }
       };
       
-      console.log('📝 Salvando experiência:', experienciaData);
-      
       const response = await fetch(`${API_BASE_URL}/api/experiencia`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -549,19 +583,10 @@ export default function PaginaPerfil() {
       });
       
       if (response.ok) {
-        const expAdicionada = await response.json();
-        console.log('✅ Experiência criada:', expAdicionada);
-        
-        // Limpar o formulário
         setNovaExperiencia({ cargo: '', empresa: '', dataInicio: '', dataFim: '' });
-        
-        // Recarregar experiências do servidor para garantir consistência
         await recarregarExperiencias();
-        
         alert('Experiência adicionada com sucesso!');
       } else {
-        const errorText = await response.text();
-        console.error('Erro na resposta:', response.status, errorText);
         alert('Erro ao adicionar experiência.');
       }
     } catch (error) {
@@ -577,22 +602,13 @@ export default function PaginaPerfil() {
     if (!id || !colaborador) return;
     
     try {
-      const expResponse = await fetch(`${API_BASE_URL}/api/experiencia`);
-      if (expResponse.ok) {
-        const todasExperiencias = await expResponse.json();
-        const colaboradorId = parseInt(id);
-        
-        const experienciasDoColaborador = todasExperiencias.filter((exp: any) => {
-          return exp.colaborador?.id === colaboradorId;
-        });
-        
-        console.log(`🔄 Recarregadas ${experienciasDoColaborador.length} experiências`);
-        
-        setColaborador(prev => prev ? {
-          ...prev,
-          experiencias: experienciasDoColaborador
-        } : null);
-      }
+      const colaboradorId = parseInt(id);
+      const experiencias = await buscarExperienciasColaborador(colaboradorId);
+      
+      setColaborador(prev => prev ? {
+        ...prev,
+        experiencias: experiencias
+      } : null);
     } catch (error) {
       console.error('Erro ao recarregar experiências:', error);
     }
@@ -609,21 +625,16 @@ export default function PaginaPerfil() {
         experiencias: prev.experiencias.filter(exp => exp.id !== expId)
       } : null);
       
-      // Depois fazer a requisição para remover do servidor
       const response = await fetch(`${API_BASE_URL}/api/experiencia/${expId}`, {
         method: 'DELETE',
       });
       
-      if (response.ok) {
-        console.log('✅ Experiência removida:', expId);
-      } else {
+      if (!response.ok) {
         // Se falhar, recarregar para restaurar o estado correto
-        console.error('Erro ao remover do servidor, recarregando...');
         await recarregarExperiencias();
       }
     } catch (error) {
       console.error('Erro ao remover experiência:', error);
-      // Se der erro, recarregar para restaurar o estado correto
       await recarregarExperiencias();
     }
   };

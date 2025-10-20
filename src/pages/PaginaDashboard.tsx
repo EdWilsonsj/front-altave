@@ -31,36 +31,24 @@ export default function PaginaDashboard() {
 
   useEffect(() => {
     if (view === 'dashboard' && colaborador) {
-      console.log('Carregando dados do dashboard...');
-      
       // Fetch collaborators
       fetch(`${API_BASE_URL}/api/colaborador`)
-        .then(response => {
-          console.log('Response colaboradores:', response.status);
-          return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-          console.log('Dados colaboradores:', data);
           setNumColaboradores(data.length);
           // TODO: Implementar a lógica de desatualizados
         })
-        .catch(error => {
-          console.error('Erro ao buscar colaboradores:', error);
+        .catch(() => {
           setNumColaboradores(0);
         });
 
       // Fetch competencies
       fetch(`${API_BASE_URL}/api/competencia`)
-        .then(response => {
-          console.log('Response competências:', response.status);
-          return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-          console.log('Dados competências:', data);
           setNumCompetencias(data.length);
         })
-        .catch(error => {
-          console.error('Erro ao buscar competências:', error);
+        .catch(() => {
           setNumCompetencias(0);
         });
     }
