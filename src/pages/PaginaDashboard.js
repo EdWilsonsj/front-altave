@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import CompetenciasChart from '../components/dashboard/CompetenciasChart';
 import VisaoColaboradores from '../components/dashboard/VisaoColaboradores';
+const [modoEscuro, setModoEscuro] = useState(false);
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 export default function PaginaDashboard() {
     const [numColaboradores, setNumColaboradores] = useState(0);
