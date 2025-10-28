@@ -78,6 +78,7 @@ interface Colaborador {
   hardSkills: HardSkill[];
   softSkills: SoftSkill[];
   fotoUrl?: string;
+  profilePicturePath?: string;
 }
 
 export default function PaginaPerfil() {
@@ -343,6 +344,11 @@ export default function PaginaPerfil() {
           ...skill,
           nomeCompetencia: corrigirTexto(skill.nomeCompetencia)
         }));
+      }
+      
+      // Construir URL da foto se profilePicturePath existir
+      if (data.profilePicturePath) {
+        data.fotoUrl = `${API_BASE_URL}/api/colaborador/foto/${data.profilePicturePath}`;
       }
       
       setColaborador(data);
