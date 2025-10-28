@@ -547,25 +547,36 @@ export default function PaginaPerfil() {
    * Adiciona uma nova hard skill para o colaborador.
    */
   const adicionarHardSkill = async () => {
-    if (novaHardSkill && colaborador) {
+    if (!novaHardSkill || !colaborador) return;
+    
+    try {
       const novaSkill = {
         nomeCompetencia: novaHardSkill,
         colaborador: { id: colaborador.id }
       };
+      console.log("Adicionando hard skill:", novaSkill);
+      
       const response = await fetch(`${API_BASE_URL}/api/hardskill`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(novaSkill),
       });
+      
       if (response.ok) {
         const skillAdicionada = await response.json();
+        console.log("Hard skill adicionada:", skillAdicionada);
         // Corrigir codificação da skill recém-adicionada
         skillAdicionada.nomeCompetencia = corrigirTexto(skillAdicionada.nomeCompetencia);
         setColaborador(prev => prev ? { ...prev, hardSkills: [...prev.hardSkills, skillAdicionada] } : null);
         setNovaHardSkill("");
       } else {
-        console.error("Falha ao adicionar a hard skill.");
+        const errorText = await response.text();
+        console.error("Falha ao adicionar a hard skill:", errorText);
+        alert("Erro ao adicionar hard skill");
       }
+    } catch (error) {
+      console.error("Erro ao adicionar hard skill:", error);
+      alert("Erro ao adicionar hard skill");
     }
   };
 
@@ -608,28 +619,51 @@ export default function PaginaPerfil() {
   };
 
   /**
+   * Normaliza texto para comparação (remove acentos e deixa minúsculo)
+   */
+  const normalizarTexto = (texto: string): string => {
+    if (!texto) return texto;
+    return texto
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .trim();
+  };
+
+  /**
    * Adiciona uma nova soft skill para o colaborador.
    */
   const adicionarSoftSkill = async () => {
-    if (novaSoftSkill && colaborador) {
+    if (!novaSoftSkill || !colaborador) return;
+    
+    try {
       const novaSkill = {
         nomeCompetencia: novaSoftSkill,
         colaborador: { id: colaborador.id }
       };
+      console.log("Adicionando soft skill:", novaSkill);
+      
       const response = await fetch(`${API_BASE_URL}/api/softskill`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(novaSkill),
       });
+      
       if (response.ok) {
         const skillAdicionada = await response.json();
+        console.log("Soft skill adicionada:", skillAdicionada);
         // Corrigir codificação da skill recém-adicionada
         skillAdicionada.nomeCompetencia = corrigirTexto(skillAdicionada.nomeCompetencia);
         setColaborador(prev => prev ? { ...prev, softSkills: [...prev.softSkills, skillAdicionada] } : null);
         setNovaSoftSkill("");
       } else {
-        console.error("Falha ao adicionar a soft skill.");
+        const errorText = await response.text();
+        console.error("Falha ao adicionar a soft skill:", errorText);
+        alert("Erro ao adicionar soft skill");
       }
+    } catch (error) {
+      console.error("Erro ao adicionar soft skill:", error);
+      alert("Erro ao adicionar soft skill");
     }
   };
 
@@ -637,13 +671,20 @@ export default function PaginaPerfil() {
    * Remove uma hard skill do colaborador.
    */
   const removerHardSkill = async (skillId: number) => {
-    const response = await fetch(`${API_BASE_URL}/api/hardskill/${skillId}`, {
-      method: 'DELETE',
-    });
-    if (response.ok) {
-      setColaborador(prev => prev ? { ...prev, hardSkills: prev.hardSkills.filter(s => s.id !== skillId) } : null);
-    } else {
-      console.error("Falha ao remover a hard skill.");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/hardskill/${skillId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        setColaborador(prev => prev ? { ...prev, hardSkills: prev.hardSkills.filter(s => s.id !== skillId) } : null);
+        console.log("Hard skill removida com sucesso");
+      } else {
+        console.error("Falha ao remover a hard skill.");
+        alert("Erro ao remover hard skill");
+      }
+    } catch (error) {
+      console.error("Erro ao remover hard skill:", error);
+      alert("Erro ao remover hard skill");
     }
   };
 
@@ -651,13 +692,20 @@ export default function PaginaPerfil() {
    * Remove uma soft skill do colaborador.
    */
   const removerSoftSkill = async (skillId: number) => {
-    const response = await fetch(`${API_BASE_URL}/api/softskill/${skillId}`, {
-      method: 'DELETE',
-    });
-    if (response.ok) {
-      setColaborador(prev => prev ? { ...prev, softSkills: prev.softSkills.filter(s => s.id !== skillId) } : null);
-    } else {
-      console.error("Falha ao remover a soft skill.");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/softskill/${skillId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        setColaborador(prev => prev ? { ...prev, softSkills: prev.softSkills.filter(s => s.id !== skillId) } : null);
+        console.log("Soft skill removida com sucesso");
+      } else {
+        console.error("Falha ao remover a soft skill.");
+        alert("Erro ao remover soft skill");
+      }
+    } catch (error) {
+      console.error("Erro ao remover soft skill:", error);
+      alert("Erro ao remover soft skill");
     }
   };
 
@@ -992,7 +1040,10 @@ export default function PaginaPerfil() {
                 >
                   {skill.nomeCompetencia}
                   <button
-                    onClick={() => removerHardSkill(skill.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removerHardSkill(skill.id);
+                    }}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                     type="button"
                   >
@@ -1010,7 +1061,7 @@ export default function PaginaPerfil() {
                 >
                   <option value="">Selecione uma Hard Skill</option>
                   {HARD_SKILLS_DISPONIVEIS
-                    .filter(skill => !hardSkills.some(hs => hs.nomeCompetencia === skill))
+                    .filter(skill => !hardSkills.some(hs => normalizarTexto(hs.nomeCompetencia) === normalizarTexto(skill)))
                     .map((skill) => (
                       <option key={skill} value={skill}>{skill}</option>
                     ))}
@@ -1041,7 +1092,10 @@ export default function PaginaPerfil() {
                 >
                   {skill.nomeCompetencia}
                   <button
-                    onClick={() => removerSoftSkill(skill.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removerSoftSkill(skill.id);
+                    }}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                     type="button"
                   >
@@ -1059,7 +1113,7 @@ export default function PaginaPerfil() {
                 >
                   <option value="">Selecione uma Soft Skill</option>
                   {SOFT_SKILLS_DISPONIVEIS
-                    .filter(skill => !softSkills.some(ss => ss.nomeCompetencia === skill))
+                    .filter(skill => !softSkills.some(ss => normalizarTexto(ss.nomeCompetencia) === normalizarTexto(skill)))
                     .map((skill) => (
                       <option key={skill} value={skill}>{skill}</option>
                     ))}
