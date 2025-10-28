@@ -190,6 +190,20 @@ export default function PaginaPerfil() {
   const [certificacoesDisponiveis, setCertificacoesDisponiveis] = useState<Certificacao[]>([]);
   const [certificacaoSelecionada, setCertificacaoSelecionada] = useState('');
 
+  // Skills pré-configuradas
+  const HARD_SKILLS_DISPONIVEIS = [
+    'Java', 'Python', 'JavaScript', 'TypeScript', 'React', 'Node.js', 'Angular', 
+    'Vue.js', 'PHP', 'C#', 'C++', 'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 
+    'Git', 'Docker', 'Kubernetes', 'AWS', 'Linux'
+  ];
+
+  const SOFT_SKILLS_DISPONIVEIS = [
+    'Comunicação', 'Trabalho em equipe', 'Liderança', 'Proatividade', 'Adaptabilidade',
+    'Resolução de problemas', 'Organização', 'Gestão de tempo', 'Criatividade', 'Empatia',
+    'Pensamento crítico', 'Autoconfiança', 'Motivação', 'Flexibilidade', 'Colaboração',
+    'Negociação', 'Persuasão', 'Resiliência', 'Inteligência emocional', 'Foco em resultados'
+  ];
+
   /**
    * Lida com o logout do usuário.
    */
@@ -533,9 +547,9 @@ export default function PaginaPerfil() {
    * Adiciona uma nova hard skill para o colaborador.
    */
   const adicionarHardSkill = async () => {
-    if (novaHardSkill.trim() && colaborador) {
+    if (novaHardSkill && colaborador) {
       const novaSkill = {
-        nomeCompetencia: novaHardSkill.trim(),
+        nomeCompetencia: novaHardSkill,
         colaborador: { id: colaborador.id }
       };
       const response = await fetch(`${API_BASE_URL}/api/hardskill`, {
@@ -594,12 +608,12 @@ export default function PaginaPerfil() {
   };
 
   /**
-   * Adiciona uma nova hard skill para o colaborador.
+   * Adiciona uma nova soft skill para o colaborador.
    */
   const adicionarSoftSkill = async () => {
-    if (novaSoftSkill.trim() && colaborador) {
+    if (novaSoftSkill && colaborador) {
       const novaSkill = {
-        nomeCompetencia: novaSoftSkill.trim(),
+        nomeCompetencia: novaSoftSkill,
         colaborador: { id: colaborador.id }
       };
       const response = await fetch(`${API_BASE_URL}/api/softskill`, {
@@ -647,16 +661,6 @@ export default function PaginaPerfil() {
     }
   };
 
-  /**
-   * Lida com o pressionar da tecla Enter para adicionar skills.
-   */
-  const aoPressionarTecla = (e: React.KeyboardEvent<HTMLInputElement>, type: 'hard' | 'soft') => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (type === 'hard') adicionarHardSkill();
-      if (type === 'soft') adicionarSoftSkill();
-    }
-  };
 
   /**
    * Adiciona uma nova experiência.
@@ -999,18 +1003,23 @@ export default function PaginaPerfil() {
             </div>
             <div className="flex justify-center mt-auto">
               <div className="flex gap-2 w-full max-w-sm">
-                <input
-                  type="text"
-                  placeholder="Adicionar Hard Skill..."
+                <select
                   value={novaHardSkill}
                   onChange={(e) => setNovaHardSkill(e.target.value)}
-                  onKeyDown={(e) => aoPressionarTecla(e, 'hard')}
-                  className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-sm"
-                />
+                  className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm"
+                >
+                  <option value="">Selecione uma Hard Skill</option>
+                  {HARD_SKILLS_DISPONIVEIS
+                    .filter(skill => !hardSkills.some(hs => hs.nomeCompetencia === skill))
+                    .map((skill) => (
+                      <option key={skill} value={skill}>{skill}</option>
+                    ))}
+                </select>
                 <button
                   onClick={adicionarHardSkill}
+                  disabled={!novaHardSkill}
                   type="button"
-                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-lg flex items-center justify-center"
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-lg flex items-center justify-center"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
@@ -1043,18 +1052,23 @@ export default function PaginaPerfil() {
             </div>
             <div className="flex justify-center mt-auto">
               <div className="flex gap-2 w-full max-w-sm">
-                <input
-                  type="text"
-                  placeholder="Adicionar Soft Skill..."
+                <select
                   value={novaSoftSkill}
                   onChange={(e) => setNovaSoftSkill(e.target.value)}
-                  onKeyDown={(e) => aoPressionarTecla(e, 'soft')}
-                  className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-sm"
-                />
+                  className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm"
+                >
+                  <option value="">Selecione uma Soft Skill</option>
+                  {SOFT_SKILLS_DISPONIVEIS
+                    .filter(skill => !softSkills.some(ss => ss.nomeCompetencia === skill))
+                    .map((skill) => (
+                      <option key={skill} value={skill}>{skill}</option>
+                    ))}
+                </select>
                 <button
                   onClick={adicionarSoftSkill}
+                  disabled={!novaSoftSkill}
                   type="button"
-                  className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-lg flex items-center justify-center"
+                  className="px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-lg flex items-center justify-center"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
