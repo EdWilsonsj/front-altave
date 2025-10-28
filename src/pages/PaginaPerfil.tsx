@@ -14,7 +14,6 @@ import {
   Sun, 
   Moon,
   Edit3,
-  BookOpen,
   Heart,
   Camera,
   LogOut,
@@ -22,12 +21,12 @@ import {
   Calendar,
   Building
 } from "lucide-react";
-import ComentariosColaborador from '../components/ComentariosColaborador';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 // Interfaces que espelham os modelos do backend
 interface Cargo {
+  id: number;
   nomeCargo: string;
 }
 
@@ -155,6 +154,7 @@ export default function PaginaPerfil() {
   const [novaSoftSkill, setNovaSoftSkill] = useState("");
   const [emEdicao, setEmEdicao] = useState(false);
   const [colaboradorOriginal, setColaboradorOriginal] = useState<Colaborador | null>(null);
+  const [cargosDisponiveis, setCargosDisponiveis] = useState<Cargo[]>([]);
   
   // Estados para controle de acesso e comentários
   const [isAdmin, setIsAdmin] = useState(false);
@@ -185,6 +185,10 @@ export default function PaginaPerfil() {
   const [comentarios, setComentarios] = useState<any[]>([]);
   const [carregandoComentarios, setCarregandoComentarios] = useState(true);
   const [novoComentario, setNovoComentario] = useState('');
+  
+  // Estados para certificações
+  const [certificacoesDisponiveis, setCertificacoesDisponiveis] = useState<Certificacao[]>([]);
+  const [certificacaoSelecionada, setCertificacaoSelecionada] = useState('');
 
   /**
    * Lida com o logout do usuário.
@@ -229,10 +233,11 @@ export default function PaginaPerfil() {
         const data = await response.json();
         setColaborador(prev => prev ? { ...prev, fotoUrl: data.fotoUrl } : null);
       } else {
-        alert('Erro ao fazer upload da foto');
+        const errorData = await response.json();
+        alert(`Erro ao fazer upload da foto: ${errorData.error || 'Erro desconhecido'}`);
       }
     } catch (error) {
-      alert('Erro ao fazer upload da foto');
+      alert(`Erro ao conectar com o servidor: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   };
 
@@ -363,10 +368,96 @@ export default function PaginaPerfil() {
     }
   };
 
+  /**
+   * Carrega os cargos disponíveis
+   */
+  const carregarCargos = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/cargo`);
+      if (response.ok) {
+        const data = await response.json();
+        setCargosDisponiveis(data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar cargos:', error);
+    }
+  };
+
+  /**
+   * Carrega as certificações disponíveis
+   */
+  const carregarCertificacoesDisponiveis = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/certificacao`);
+      if (response.ok) {
+        const data = await response.json();
+        setCertificacoesDisponiveis(data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar certificações:', error);
+    }
+  };
+
+  /**
+   * Adiciona uma certificação ao colaborador
+   */
+  const adicionarCertificacao = async () => {
+    if (!certificacaoSelecionada || !colaborador) return;
+    
+    const certificacaoId = parseInt(certificacaoSelecionada);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/colaborador/${colaborador.id}/certificacao/${certificacaoId}`, {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        const colaboradorAtualizado = await response.json();
+        setColaborador(colaboradorAtualizado);
+        setCertificacaoSelecionada('');
+        alert('Certificação adicionada com sucesso!');
+      } else {
+        alert('Erro ao adicionar certificação.');
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar certificação:', error);
+      alert('Erro ao adicionar certificação.');
+    }
+  };
+
+  /**
+   * Remove uma certificação do colaborador
+   */
+  const removerCertificacao = async (certificacaoId: number) => {
+    if (!colaborador) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/colaborador/${colaborador.id}/certificacao/${certificacaoId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // Remover localmente
+        setColaborador(prev => prev ? {
+          ...prev,
+          certificacoes: prev.certificacoes.filter(cert => cert.id !== certificacaoId)
+        } : null);
+        alert('Certificação removida com sucesso!');
+      } else {
+        alert('Erro ao remover certificação.');
+      }
+    } catch (error) {
+      console.error('Erro ao remover certificação:', error);
+      alert('Erro ao remover certificação.');
+    }
+  };
+
   // Efeito para buscar os dados do colaborador quando o ID da URL muda
   useEffect(() => {
     buscarColaborador();
     carregarComentarios();
+    carregarCargos();
+    carregarCertificacoesDisponiveis();
   }, [id]);
   
   /**
@@ -652,11 +743,29 @@ export default function PaginaPerfil() {
     if (!colaborador || !novoProjeto.nomeProjeto) return;
     
     try {
+      const projetoData = {
+        nomeProjeto: novoProjeto.nomeProjeto.trim(),
+        descricao: novoProjeto.descricao.trim(),
+        tecnologias: novoProjeto.tecnologias.trim(),
+        dataInicio: novoProjeto.dataInicio || null,
+        dataFim: novoProjeto.dataFim || null,
+        link: novoProjeto.link.trim() || null,
+        colaborador: { id: colaborador.id }
+      };
+      
+      console.log('Enviando projeto para:', `${API_BASE_URL}/api/projeto`);
+      console.log('Dados:', projetoData);
+      
       const response = await fetch(`${API_BASE_URL}/api/projeto`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...novoProjeto, colaborador: { id: colaborador.id } }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(projetoData),
       });
+      
+      console.log('Response status:', response.status);
       
       if (response.ok) {
         const projetoAdicionado = await response.json();
@@ -665,9 +774,15 @@ export default function PaginaPerfil() {
           projetos: prev.projetos ? [...prev.projetos, projetoAdicionado] : [projetoAdicionado] 
         } : null);
         setNovoProjeto({ nomeProjeto: '', descricao: '', tecnologias: '', dataInicio: '', dataFim: '', link: '' });
+        alert('Projeto adicionado com sucesso!');
+      } else {
+        const errorText = await response.text();
+        console.error('Erro do servidor:', errorText);
+        alert(`Erro ao adicionar projeto: ${response.status} - ${errorText.substring(0, 100)}`);
       }
     } catch (error) {
       console.error('Erro ao adicionar projeto:', error);
+      alert('Erro ao adicionar projeto. Verifique o console para mais detalhes.');
     }
   };
 
@@ -685,9 +800,13 @@ export default function PaginaPerfil() {
           ...prev, 
           projetos: prev.projetos ? prev.projetos.filter(proj => proj.id !== projetoId) : []
         } : null);
+        alert('Projeto removido com sucesso!');
+      } else {
+        alert('Erro ao remover projeto.');
       }
     } catch (error) {
       console.error('Erro ao remover projeto:', error);
+      alert('Erro ao remover projeto.');
     }
   };
 
@@ -784,7 +903,28 @@ export default function PaginaPerfil() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-600 dark:text-gray-300">
                 <div className="flex items-center gap-2">
                   <Briefcase className="h-5 w-5 text-blue-500" />
-                  <span>{cargo?.nomeCargo || 'N/A'}</span>
+                  {emEdicao ? (
+                    <select
+                      name="cargo"
+                      value={colaborador.cargo?.id || ''}
+                      onChange={(e) => {
+                        const selectedCargo = cargosDisponiveis.find(c => c.id === parseInt(e.target.value));
+                        if (selectedCargo) {
+                          setColaborador(prev => prev ? { ...prev, cargo: selectedCargo } : null);
+                        }
+                      }}
+                      className="px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm"
+                    >
+                      <option value="">Selecione um cargo</option>
+                      {cargosDisponiveis.map((cargo) => (
+                        <option key={cargo.id} value={cargo.id}>
+                          {cargo.nomeCargo}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span>{cargo?.nomeCargo || 'N/A'}</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-5 w-5 text-blue-500" />
@@ -926,87 +1066,171 @@ export default function PaginaPerfil() {
         {/* Linha 2: CERTIFICAÇÕES - PROJETOS - COMENTÁRIOS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* CERTIFICAÇÕES */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-gray-700 overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
               <Award className="h-6 w-6 text-blue-500" />
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Certificações</h2>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Certificações ({certificacoes.length})</h2>
             </div>
-            <div className="space-y-3">
-              {certificacoes.map((cert) => (
-                <div key={cert.id} className="p-3 bg-blue-50 dark:bg-gray-700 rounded-xl">
-                  <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{cert.nomeCertificacao}</h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">{cert.instituicao}</p>
+            
+            {/* Lista de certificações */}
+            <div className="space-y-3 mb-4 max-h-64 overflow-y-auto pr-1">
+              {certificacoes.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <p className="text-sm">Nenhuma certificação adicionada ainda</p>
                 </div>
-              ))}
+              ) : (
+                certificacoes.map((cert) => (
+                  <div key={cert.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 group">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                            {cert.nomeCertificacao.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">{cert.nomeCertificacao}</h4>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{cert.instituicao}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removerCertificacao(cert.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 flex-shrink-0"
+                        title="Remover certificação"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* Adicionar nova certificação */}
+            <div className="mt-4 pt-4">
+              <div className="flex flex-col gap-2">
+                <select
+                  value={certificacaoSelecionada}
+                  onChange={(e) => setCertificacaoSelecionada(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm"
+                >
+                  <option value="">Selecione uma certificação</option>
+                  {certificacoesDisponiveis
+                    .filter(cert => !certificacoes.some(c => c.id === cert.id))
+                    .map((cert) => (
+                      <option key={cert.id} value={cert.id}>
+                        {cert.nomeCertificacao}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  onClick={adicionarCertificacao}
+                  disabled={!certificacaoSelecionada}
+                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
+                >
+                  <Plus className="h-4 w-4" />
+                  Adicionar Certificação
+                </button>
+              </div>
             </div>
           </div>
 
           {/* PROJETOS */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-gray-700 overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
               <FolderOpen className="h-6 w-6 text-blue-500" />
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Projetos</h2>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Projetos ({projetos.length})</h2>
             </div>
-            <div className="space-y-3 mb-4">
-              {projetos.map((proj) => (
-                <div key={proj.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{proj.nomeProjeto}</h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{proj.descricao}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">Tech: {proj.tecnologias}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">{new Date(proj.dataInicio).toLocaleDateString()} - {proj.dataFim ? new Date(proj.dataFim).toLocaleDateString() : 'Presente'}</p>
-                      {proj.link && (
-                        <a href={proj.link} target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline">Abrir</a>
-                      )}
-                    </div>
-                    <button onClick={() => removerProjeto(proj.id)} className="text-red-600 hover:text-red-700 text-xs">
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
+            
+            {/* Lista de projetos */}
+            <div className="space-y-3 mb-4 max-h-64 overflow-y-auto pr-1">
+              {projetos.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <p className="text-sm">Nenhum projeto adicionado ainda</p>
                 </div>
-              ))}
+              ) : (
+                projetos.map((proj) => (
+                  <div key={proj.id} className="p-3 bg-green-50 dark:bg-gray-700 rounded-xl border border-green-200 dark:border-gray-600 group">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm mb-1">{proj.nomeProjeto}</h4>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{proj.descricao}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mb-1">
+                          <Code className="h-3 w-3 inline mr-1" />
+                          {proj.tecnologias}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500">
+                          <Calendar className="h-3 w-3 inline mr-1" />
+                          {proj.dataInicio ? new Date(proj.dataInicio).toLocaleDateString() : 'N/A'} - {proj.dataFim ? new Date(proj.dataFim).toLocaleDateString() : 'Presente'}
+                        </p>
+                        {proj.link && (
+                          <a href={proj.link} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:text-blue-700 underline inline-block mt-1">
+                            Ver projeto →
+                          </a>
+                        )}
+                      </div>
+                      <button onClick={() => removerProjeto(proj.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 flex-shrink-0">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <input 
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300" 
-                placeholder="Nome" 
-                value={novoProjeto.nomeProjeto} 
-                onChange={(e)=>setNovoProjeto(v=>({...v,nomeProjeto:e.target.value}))} 
-              />
-              <input 
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300" 
-                placeholder="Tech" 
-                value={novoProjeto.tecnologias} 
-                onChange={(e)=>setNovoProjeto(v=>({...v,tecnologias:e.target.value}))} 
-              />
-              <input 
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm col-span-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300" 
-                placeholder="Descrição" 
-                value={novoProjeto.descricao} 
-                onChange={(e)=>setNovoProjeto(v=>({...v,descricao:e.target.value}))} 
-              />
-              <input 
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300" 
-                type="date" 
-                value={novoProjeto.dataInicio} 
-                onChange={(e)=>setNovoProjeto(v=>({...v,dataInicio:e.target.value}))} 
-              />
-              <input 
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300" 
-                type="date" 
-                value={novoProjeto.dataFim} 
-                onChange={(e)=>setNovoProjeto(v=>({...v,dataFim:e.target.value}))} 
-              />
-              <input 
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm col-span-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300" 
-                placeholder="Link (opcional)" 
-                value={novoProjeto.link} 
-                onChange={(e)=>setNovoProjeto(v=>({...v,link:e.target.value}))} 
-              />
-              <button onClick={adicionarProjeto} className="col-span-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
-                Adicionar Projeto
-              </button>
+            
+            {/* Formulário de novo projeto */}
+            <div className="mt-4 pt-4">
+              <div className="flex flex-col gap-2">
+                <input 
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm" 
+                  placeholder="Nome do Projeto" 
+                  value={novoProjeto.nomeProjeto} 
+                  onChange={(e)=>setNovoProjeto(v=>({...v,nomeProjeto:e.target.value}))} 
+                />
+                <input 
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm" 
+                  placeholder="Tecnologias (ex: React, Node.js, PostgreSQL)" 
+                  value={novoProjeto.tecnologias} 
+                  onChange={(e)=>setNovoProjeto(v=>({...v,tecnologias:e.target.value}))} 
+                />
+                <textarea
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm resize-none"
+                  placeholder="Descrição do projeto..."
+                  rows={2}
+                  value={novoProjeto.descricao} 
+                  onChange={(e)=>setNovoProjeto(v=>({...v,descricao:e.target.value}))} 
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input 
+                    className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm" 
+                    type="date" 
+                    placeholder="Data Início"
+                    value={novoProjeto.dataInicio} 
+                    onChange={(e)=>setNovoProjeto(v=>({...v,dataInicio:e.target.value}))} 
+                  />
+                  <input 
+                    className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm" 
+                    type="date" 
+                    placeholder="Data Fim (opcional)"
+                    value={novoProjeto.dataFim} 
+                    onChange={(e)=>setNovoProjeto(v=>({...v,dataFim:e.target.value}))} 
+                  />
+                </div>
+                <input 
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm" 
+                  placeholder="Link (opcional)" 
+                  value={novoProjeto.link} 
+                  onChange={(e)=>setNovoProjeto(v=>({...v,link:e.target.value}))} 
+                />
+                <button 
+                  onClick={adicionarProjeto} 
+                  disabled={!novoProjeto.nomeProjeto.trim()}
+                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
+                >
+                  <Plus className="h-4 w-4" />
+                  Adicionar Projeto
+                </button>
+              </div>
             </div>
           </div>
 
