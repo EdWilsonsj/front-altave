@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -15,6 +15,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { isAuthenticated, isAdmin, isLoading, colaborador } = useAuth();
   const location = useLocation();
+  const params = useParams();
 
   // Mostrar loading enquanto verifica autenticação
   if (isLoading) {
@@ -38,6 +39,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (requireAdmin && !isAdmin) {
     // Se não é admin, redirecionar para o perfil do usuário
     return <Navigate to={`/profile/${colaborador?.id}`} replace />;
+  }
+
+  // Se a rota NÃO exige admin (ex.: /profile/:id), garantir que o usuário só acesse o próprio perfil
+  if (!requireAdmin && params?.id) {
+    const requestedId = Number(params.id);
+    if (colaborador?.id != null && requestedId !== colaborador.id) {
+      return <Navigate to={`/profile/${colaborador.id}`} replace />;
+    }
   }
 
   // Se todas as verificações passaram, renderizar os children
