@@ -19,8 +19,11 @@ import {
   LogOut,
   FolderOpen,
   Calendar,
-  Building
+  Building,
+  Download
 } from "lucide-react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -346,6 +349,10 @@ export default function PaginaPerfil() {
       }
       const data: Colaborador = await response.json();
       
+      console.log("Colaborador carregado do backend:", data);
+      console.log("Soft Skills recebidas:", data.softSkills);
+      console.log("Hard Skills recebidas:", data.hardSkills);
+      
       // Buscar experiências do colaborador usando função auxiliar
       const colaboradorId = parseInt(id);
       data.experiencias = await buscarExperienciasColaborador(colaboradorId);
@@ -356,6 +363,7 @@ export default function PaginaPerfil() {
           ...skill,
           nomeCompetencia: corrigirTexto(skill.nomeCompetencia)
         }));
+        console.log("Soft Skills após correção:", data.softSkills);
       }
       
       if (data.hardSkills) {
@@ -363,6 +371,7 @@ export default function PaginaPerfil() {
           ...skill,
           nomeCompetencia: corrigirTexto(skill.nomeCompetencia)
         }));
+        console.log("Hard Skills após correção:", data.hardSkills);
       }
       
       // Construir URL da foto se profilePicturePath existir
@@ -565,18 +574,17 @@ export default function PaginaPerfil() {
       if (response.ok) {
         const skillAdicionada = await response.json();
         console.log("Hard skill adicionada:", skillAdicionada);
-        // Corrigir codificação da skill recém-adicionada
-        skillAdicionada.nomeCompetencia = corrigirTexto(skillAdicionada.nomeCompetencia);
-        setColaborador(prev => prev ? { ...prev, hardSkills: [...prev.hardSkills, skillAdicionada] } : null);
+        // Recarregar colaborador completo do backend para garantir sincronização
+        await buscarColaborador();
         setNovaHardSkill("");
       } else {
         const errorText = await response.text();
         console.error("Falha ao adicionar a hard skill:", errorText);
-        alert("Erro ao adicionar hard skill");
+        alert(`Erro ao adicionar hard skill: ${errorText}`);
       }
     } catch (error) {
       console.error("Erro ao adicionar hard skill:", error);
-      alert("Erro ao adicionar hard skill");
+      alert(`Erro ao adicionar hard skill: ${error}`);
     }
   };
 
@@ -635,35 +643,25 @@ export default function PaginaPerfil() {
    */
   const adicionarSoftSkill = async () => {
     if (!novaSoftSkill || !colaborador) return;
-    
     try {
-      const novaSkill = {
-        nomeCompetencia: novaSoftSkill,
-        colaborador: { id: colaborador.id }
-      };
-      console.log("Adicionando soft skill:", novaSkill);
-      
-      const response = await fetch(`${API_BASE_URL}/api/softskill`, {
+      const payload = { nomeCompetencia: novaSoftSkill };
+      console.log("Associando soft skill ao colaborador:", payload);
+      const response = await fetch(`${API_BASE_URL}/api/colaborador/${colaborador.id}/softskill`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(novaSkill),
+        body: JSON.stringify(payload),
       });
-      
       if (response.ok) {
-        const skillAdicionada = await response.json();
-        console.log("Soft skill adicionada:", skillAdicionada);
-        // Corrigir codificação da skill recém-adicionada
-        skillAdicionada.nomeCompetencia = corrigirTexto(skillAdicionada.nomeCompetencia);
-        setColaborador(prev => prev ? { ...prev, softSkills: [...prev.softSkills, skillAdicionada] } : null);
+        await buscarColaborador();
         setNovaSoftSkill("");
       } else {
         const errorText = await response.text();
-        console.error("Falha ao adicionar a soft skill:", errorText);
-        alert("Erro ao adicionar soft skill");
+        console.error("Falha ao associar a soft skill:", errorText);
+        alert(`Erro ao adicionar soft skill: ${errorText}`);
       }
     } catch (error) {
       console.error("Erro ao adicionar soft skill:", error);
-      alert("Erro ao adicionar soft skill");
+      alert(`Erro ao adicionar soft skill: ${error}`);
     }
   };
 
@@ -672,19 +670,25 @@ export default function PaginaPerfil() {
    */
   const removerHardSkill = async (skillId: number) => {
     try {
+      console.log(`Removendo hard skill com ID: ${skillId}`);
       const response = await fetch(`${API_BASE_URL}/api/hardskill/${skillId}`, {
         method: 'DELETE',
       });
+      
+      console.log(`Response status: ${response.status}`);
+      
       if (response.ok) {
-        setColaborador(prev => prev ? { ...prev, hardSkills: prev.hardSkills.filter(s => s.id !== skillId) } : null);
-        console.log("Hard skill removida com sucesso");
+        console.log("Hard skill removida com sucesso no backend");
+        // Recarregar colaborador completo do backend para garantir sincronização
+        await buscarColaborador();
       } else {
-        console.error("Falha ao remover a hard skill.");
-        alert("Erro ao remover hard skill");
+        const errorText = await response.text();
+        console.error("Falha ao remover a hard skill. Status:", response.status, "Erro:", errorText);
+        alert(`Erro ao remover hard skill: ${errorText}`);
       }
     } catch (error) {
       console.error("Erro ao remover hard skill:", error);
-      alert("Erro ao remover hard skill");
+      alert(`Erro ao remover hard skill: ${error}`);
     }
   };
 
@@ -692,20 +696,22 @@ export default function PaginaPerfil() {
    * Remove uma soft skill do colaborador.
    */
   const removerSoftSkill = async (skillId: number) => {
+    if (!colaborador) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/softskill/${skillId}`, {
+      console.log(`Desassociando soft skill ${skillId} do colaborador ${colaborador.id}`);
+      const response = await fetch(`${API_BASE_URL}/api/colaborador/${colaborador.id}/softskill/${skillId}`, {
         method: 'DELETE',
       });
       if (response.ok) {
-        setColaborador(prev => prev ? { ...prev, softSkills: prev.softSkills.filter(s => s.id !== skillId) } : null);
-        console.log("Soft skill removida com sucesso");
+        await buscarColaborador();
       } else {
-        console.error("Falha ao remover a soft skill.");
-        alert("Erro ao remover soft skill");
+        const errorText = await response.text();
+        console.error("Falha ao remover a soft skill. Status:", response.status, "Erro:", errorText);
+        alert(`Erro ao remover soft skill: ${errorText}`);
       }
     } catch (error) {
       console.error("Erro ao remover soft skill:", error);
-      alert("Erro ao remover soft skill");
+      alert(`Erro ao remover soft skill: ${error}`);
     }
   };
 
@@ -862,6 +868,207 @@ export default function PaginaPerfil() {
     }
   };
 
+  /**
+   * Exporta o perfil completo para PDF.
+   */
+  const exportarParaPDF = () => {
+    if (!colaborador) return;
+
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    let yPos = margin;
+
+    // Função auxiliar para adicionar nova página se necessário
+    const checkPageBreak = (requiredSpace: number) => {
+      if (yPos + requiredSpace > pageHeight - margin) {
+        doc.addPage();
+        yPos = margin;
+      }
+    };
+
+    // Título
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(59, 130, 246); // Azul
+    const title = 'PERFIL PROFISSIONAL';
+    const titleWidth = doc.getTextWidth(title);
+    doc.text(title, (pageWidth - titleWidth) / 2, yPos);
+    yPos += 15;
+
+    // Linha separadora
+    doc.setDrawColor(59, 130, 246);
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 10;
+
+    // Informações Pessoais
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('INFORMAÇÕES PESSOAIS', margin, yPos);
+    yPos += 10;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Nome: ${colaborador.nome}`, margin, yPos);
+    yPos += 7;
+    doc.text(`Email: ${colaborador.email}`, margin, yPos);
+    yPos += 7;
+    doc.text(`Cargo: ${colaborador.cargo?.nomeCargo || 'N/A'}`, margin, yPos);
+    yPos += 10;
+
+    // Sobre Mim
+    checkPageBreak(25);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('SOBRE MIM', margin, yPos);
+    yPos += 8;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const aboutLines = doc.splitTextToSize(colaborador.apresentacao || 'Não informado', pageWidth - 2 * margin);
+    doc.text(aboutLines, margin, yPos);
+    yPos += aboutLines.length * 5 + 8;
+
+    // Experiências Profissionais
+    if (colaborador.experiencias && colaborador.experiencias.length > 0) {
+      checkPageBreak(30);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('EXPERIÊNCIAS PROFISSIONAIS', margin, yPos);
+      yPos += 8;
+
+      colaborador.experiencias.forEach((exp, index) => {
+        checkPageBreak(20);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${index + 1}. ${exp.cargo}`, margin, yPos);
+        yPos += 6;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Empresa: ${exp.empresa}`, margin + 5, yPos);
+        yPos += 5;
+        const inicioDate = new Date(exp.dataInicio).toLocaleDateString('pt-BR');
+        const fimDate = exp.dataFim ? new Date(exp.dataFim).toLocaleDateString('pt-BR') : 'Presente';
+        doc.text(`Período: ${inicioDate} - ${fimDate}`, margin + 5, yPos);
+        yPos += 7;
+      });
+    }
+
+    // Hard Skills
+    if (colaborador.hardSkills && colaborador.hardSkills.length > 0) {
+      checkPageBreak(20);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('HARD SKILLS', margin, yPos);
+      yPos += 8;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const hardSkillsText = colaborador.hardSkills.map(skill => skill.nomeCompetencia).join(', ');
+      const hardSkillsLines = doc.splitTextToSize(hardSkillsText, pageWidth - 2 * margin);
+      doc.text(hardSkillsLines, margin, yPos);
+      yPos += hardSkillsLines.length * 5 + 8;
+    }
+
+    // Soft Skills
+    if (colaborador.softSkills && colaborador.softSkills.length > 0) {
+      checkPageBreak(20);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('SOFT SKILLS', margin, yPos);
+      yPos += 8;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const softSkillsText = colaborador.softSkills.map(skill => skill.nomeCompetencia).join(', ');
+      const softSkillsLines = doc.splitTextToSize(softSkillsText, pageWidth - 2 * margin);
+      doc.text(softSkillsLines, margin, yPos);
+      yPos += softSkillsLines.length * 5 + 8;
+    }
+
+    // Certificações
+    if (colaborador.certificacoes && colaborador.certificacoes.length > 0) {
+      checkPageBreak(25);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CERTIFICAÇÕES', margin, yPos);
+      yPos += 8;
+
+      colaborador.certificacoes.forEach((cert, index) => {
+        checkPageBreak(15);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${index + 1}. ${cert.nomeCertificacao}`, margin, yPos);
+        yPos += 5;
+        doc.text(`   Instituição: ${cert.instituicao}`, margin + 5, yPos);
+        yPos += 7;
+      });
+    }
+
+    // Projetos
+    if (colaborador.projetos && colaborador.projetos.length > 0) {
+      checkPageBreak(30);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PROJETOS', margin, yPos);
+      yPos += 8;
+
+      colaborador.projetos.forEach((proj, index) => {
+        checkPageBreak(30);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${index + 1}. ${proj.nomeProjeto}`, margin, yPos);
+        yPos += 6;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        if (proj.descricao) {
+          const descLines = doc.splitTextToSize(proj.descricao, pageWidth - 2 * margin - 5);
+          doc.text(descLines, margin + 5, yPos);
+          yPos += descLines.length * 5;
+        }
+        
+        if (proj.tecnologias) {
+          doc.text(`Tecnologias: ${proj.tecnologias}`, margin + 5, yPos);
+          yPos += 5;
+        }
+        
+        if (proj.dataInicio) {
+          const inicioDate = new Date(proj.dataInicio).toLocaleDateString('pt-BR');
+          const fimDate = proj.dataFim ? new Date(proj.dataFim).toLocaleDateString('pt-BR') : 'Presente';
+          doc.text(`Período: ${inicioDate} - ${fimDate}`, margin + 5, yPos);
+          yPos += 5;
+        }
+        
+        if (proj.link) {
+          doc.setTextColor(59, 130, 246);
+          doc.text(`Link: ${proj.link}`, margin + 5, yPos);
+          doc.setTextColor(0, 0, 0);
+          yPos += 5;
+        }
+        
+        yPos += 7;
+      });
+    }
+
+    // Rodapé
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(128, 128, 128);
+    doc.text(
+      `Gerado em ${new Date().toLocaleString('pt-BR')} - Altave Sistema de Gestão`,
+      pageWidth / 2,
+      pageHeight - 10,
+      { align: 'center' }
+    );
+
+    // Salvar o PDF
+    doc.save(`perfil_${colaborador.nome.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   // Renderização condicional enquanto os dados estão sendo carregados
   if (carregando) {
     return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
@@ -995,10 +1202,16 @@ export default function PaginaPerfil() {
                 </button>
               </div>
             ) : (
-              <button onClick={aoEditar} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg">
-                <Edit3 className="h-4 w-4" />
-                Editar Perfil
-              </button>
+              <div className="flex gap-2">
+                <button onClick={aoEditar} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg">
+                  <Edit3 className="h-4 w-4" />
+                  Editar Perfil
+                </button>
+                <button onClick={exportarParaPDF} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg">
+                  <Download className="h-4 w-4" />
+                  Exportar PDF
+                </button>
+              </div>
             )}
           </div>
         </div>
