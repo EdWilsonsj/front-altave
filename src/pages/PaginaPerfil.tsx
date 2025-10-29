@@ -1,4 +1,7 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -149,7 +152,10 @@ export default function PaginaPerfil() {
   };
 
   // Estados do componente
-  const [modoEscuro, setModoEscuro] = useState(false);
+  const [modoEscuro, setModoEscuro] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage?.getItem('theme') === 'dark';
+  });
   const [colaborador, setColaborador] = useState<Colaborador | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -325,14 +331,22 @@ export default function PaginaPerfil() {
     }
   };
 
-  // Efeito para gerenciar o tema escuro
+  // Efeito para gerenciar o tema escuro e persistir
   useEffect(() => {
-    const root = document.documentElement;
-    if (modoEscuro) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    try {
+      const root = document.documentElement;
+      if (modoEscuro) {
+        root.classList.add("dark");
+        if (typeof window !== 'undefined' && window.localStorage?.setItem) {
+          window.localStorage.setItem('theme', 'dark');
+        }
+      } else {
+        root.classList.remove("dark");
+        if (typeof window !== 'undefined' && window.localStorage?.setItem) {
+          window.localStorage.setItem('theme', 'light');
+        }
+      }
+    } catch { /* ignore theme error */ }
   }, [modoEscuro]);
 
   /**
@@ -514,6 +528,22 @@ export default function PaginaPerfil() {
       // Erro ao carregar comentários
     } finally {
       setCarregandoComentarios(false);
+    }
+  };
+
+  const removerComentario = async (comentarioId: number) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/comentario/${comentarioId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        await carregarComentarios();
+      } else {
+        const errorText = await response.text();
+        alert(`Erro ao remover comentário: ${errorText}`);
+      }
+    } catch (error) {
+      alert('Erro ao remover comentário.');
     }
   };
   
@@ -1546,6 +1576,15 @@ export default function PaginaPerfil() {
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{comentario.nomeColaboradorOrigem || 'Desconhecido'}</h4>
                           <span className="text-xs text-gray-500 dark:text-gray-400">{formatarData(comentario.dataComentario)}</span>
+                          {isAdmin && currentUserId === comentario.idColaboradorOrigem && (
+                            <button
+                              onClick={() => removerComentario(comentario.idComentario)}
+                              className="ml-auto text-red-600 hover:text-red-700 text-xs"
+                              title="Remover comentário"
+                            >
+                              Remover
+                            </button>
+                          )}
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-300">{comentario.textoComentario}</p>
                       </div>

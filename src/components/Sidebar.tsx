@@ -15,7 +15,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userId }) => {
   const linkClasses = (path: string) => {
     return location.pathname === path
       ? 'flex items-center p-3 bg-altave-primary text-white rounded-lg'
-      : 'flex items-center p-3 text-altave-text hover:bg-altave-soft-blue dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors';
+      : 'flex items-center p-3 text-gray-800 hover:bg-altave-soft-blue dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors';
   };
 
   const handleLogout = () => {
