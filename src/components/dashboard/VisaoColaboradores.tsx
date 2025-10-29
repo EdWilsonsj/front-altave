@@ -104,8 +104,8 @@ export default function VisaoColaboradores() {
         setSoftPorColabNomes(sNames);
 
         // opções de filtro
-        const hardOpts = Array.from(new Set(hard.map((x: any) => x?.nomeCompetencia).filter(Boolean))).sort();
-        const softOpts = Array.from(new Set(soft.map((x: any) => x?.nomeCompetencia).filter(Boolean))).sort();
+        const hardOpts = Array.from(new Set(hard.map((x: any) => x?.nomeCompetencia).filter((v): v is string => typeof v === 'string' && v.length > 0))).sort();
+        const softOpts = Array.from(new Set(soft.map((x: any) => x?.nomeCompetencia).filter((v): v is string => typeof v === 'string' && v.length > 0))).sort();
         setHardOpcoes(hardOpts);
         setSoftOpcoes(softOpts);
       } catch (_) {
