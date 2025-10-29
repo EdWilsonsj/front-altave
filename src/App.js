@@ -5,11 +5,15 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 // Components
 import ProtectedRoute from "./components/ProtectedRoute";
 import SupervisorLayout from "./components/SupervisorLayout";
-// Páginas
-import PaginaLogin from "./pages/PaginaLogin";
-import PaginaCadastro from "./pages/PaginaCadastro";
-import PaginaPerfil from "./pages/PaginaPerfil";
-import PaginaDashboard from "./pages/PaginaDashboard";
+import { lazy } from "react";
+// @ts-expect-error
+const PaginaLogin = lazy(() => import(/* @vite-ignore */ "./pages/PaginaLogin.tsx"));
+// @ts-expect-error
+const PaginaCadastro = lazy(() => import(/* @vite-ignore */ "./pages/PaginaCadastro.tsx"));
+// @ts-expect-error
+const PaginaPerfil = lazy(() => import(/* @vite-ignore */ "./pages/PaginaPerfil.tsx"));
+// @ts-expect-error
+const PaginaDashboard = lazy(() => import(/* @vite-ignore */ "./pages/PaginaDashboard.tsx"));
 // Componente interno para aguardar inicialização do Auth
 function AppContent() {
     const { isLoading } = useAuth();
