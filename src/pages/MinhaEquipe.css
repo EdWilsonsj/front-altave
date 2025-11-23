@@ -1,0 +1,212 @@
+/* MinhaEquipe.css - Seguindo padrão visual do projeto */
+
+.minha-equipe-container {
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #eff6ff, #ffffff, #eff6ff);
+  padding: 2rem;
+}
+
+.dark .minha-equipe-container {
+  background: linear-gradient(to bottom right, #1f2937, #111827, #1f2937);
+}
+
+.minha-equipe-container h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.dark .minha-equipe-container h1 {
+  color: #f9fafb;
+}
+
+.minha-equipe-container .subtitle {
+  font-size: 1.25rem;
+  color: #6b7280;
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.dark .minha-equipe-container .subtitle {
+  color: #9ca3af;
+}
+
+.secao-equipe {
+  margin-bottom: 3rem;
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #dbeafe;
+}
+
+.dark .secao-equipe {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.secao-equipe h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.dark .secao-equipe h2 {
+  color: #f9fafb;
+}
+
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.card-colaborador {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 2px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dark .card-colaborador {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.card-colaborador:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-color: #3b82f6;
+}
+
+.dark .card-colaborador:hover {
+  border-color: #60a5fa;
+}
+
+.card-colaborador.supervisor {
+  border-color: #3b82f6;
+  background: linear-gradient(to bottom, #eff6ff, white);
+}
+
+.dark .card-colaborador.supervisor {
+  background: linear-gradient(to bottom, #1e3a8a, #374151);
+}
+
+.card-colaborador.diretor {
+  border-color: #7c3aed;
+  background: linear-gradient(to bottom, #f5f3ff, white);
+}
+
+.dark .card-colaborador.diretor {
+  background: linear-gradient(to bottom, #4c1d95, #374151);
+}
+
+.card-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #3b82f6;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.badge.diretor-badge {
+  background: #7c3aed;
+}
+
+.card-colaborador h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.dark .card-colaborador h3 {
+  color: #f9fafb;
+}
+
+.card-colaborador .cargo {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.dark .card-colaborador .cargo {
+  color: #9ca3af;
+}
+
+.card-colaborador .email {
+  font-size: 0.875rem;
+  color: #3b82f6;
+  word-break: break-word;
+}
+
+.dark .card-colaborador .email {
+  color: #60a5fa;
+}
+
+.loading,
+.error {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: #6b7280;
+}
+
+.dark .loading,
+.dark .error {
+  color: #9ca3af;
+}
+
+.loading::after {
+  content: '';
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-left: 0.5rem;
+  border: 3px solid #3b82f6;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .minha-equipe-container {
+    padding: 1rem;
+  }
+
+  .minha-equipe-container h1 {
+    font-size: 2rem;
+  }
+
+  .secao-equipe {
+    padding: 1.5rem;
+  }
+
+  .grid-cards {
+    grid-template-columns: 1fr;
+  }
+}

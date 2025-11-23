@@ -63,6 +63,8 @@ interface Projeto {
 interface HardSkill {
   id: number;
   nomeCompetencia: string;
+  isHighlighted?: boolean;
+  orderPosition?: number;
 }
 
 interface SoftSkill {
@@ -298,35 +300,58 @@ export default function PaginaPerfil() {
   const aoSalvar = async () => {
     if (!colaborador) return;
     try {
+      // Only send basic profile fields, not collections
+      const updateData = {
+        nome: colaborador.nome,
+        email: colaborador.email,
+        apresentacao: colaborador.apresentacao,
+        cpf: colaborador.cpf,
+        perfil: colaborador.perfil,
+        cargo: colaborador.cargo ? { id: colaborador.cargo.id } : null
+      };
+      
       const response = await fetch(`${API_BASE_URL}/api/colaborador/${colaborador.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(colaborador),
+        body: JSON.stringify(updateData),
       });
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         throw new Error('Falha ao salvar o perfil.');
       }
       const colaboradorAtualizado = await response.json();
       
+      // Preserve existing collections from current state
+      const updatedColaborador = {
+        ...colaboradorAtualizado,
+        softSkills: colaborador.softSkills,
+        hardSkills: colaborador.hardSkills,
+        experiencias: colaborador.experiencias,
+        certificacoes: colaborador.certificacoes,
+        projetos: colaborador.projetos
+      };
+      
       // Aplicar correção de codificação nos dados atualizados também
-      if (colaboradorAtualizado.softSkills) {
-        colaboradorAtualizado.softSkills = colaboradorAtualizado.softSkills.map((skill: SoftSkill) => ({
+      if (updatedColaborador.softSkills) {
+        updatedColaborador.softSkills = updatedColaborador.softSkills.map((skill: SoftSkill) => ({
           ...skill,
           nomeCompetencia: corrigirTexto(skill.nomeCompetencia)
         }));
       }
       
-      if (colaboradorAtualizado.hardSkills) {
-        colaboradorAtualizado.hardSkills = colaboradorAtualizado.hardSkills.map((skill: HardSkill) => ({
+      if (updatedColaborador.hardSkills) {
+        updatedColaborador.hardSkills = updatedColaborador.hardSkills.map((skill: HardSkill) => ({
           ...skill,
           nomeCompetencia: corrigirTexto(skill.nomeCompetencia)
         }));
       }
       
-      setColaborador(colaboradorAtualizado);
+      setColaborador(updatedColaborador);
       setEmEdicao(false);
       setColaboradorOriginal(null);
     } catch (error) {
+      console.error('Error saving profile:', error);
       alert("Erro ao salvar as alterações. Tente novamente.");
     }
   };
@@ -745,6 +770,119 @@ export default function PaginaPerfil() {
     }
   };
 
+  /**
+   * Marca uma hard skill como destacada (top 3).
+   */
+  const toggleHighlightHardSkill = async (skillId: number, isCurrentlyHighlighted: boolean) => {
+    try {
+      const endpoint = isCurrentlyHighlighted 
+        ? `${API_BASE_URL}/api/hardskill/${skillId}/unhighlight`
+        : `${API_BASE_URL}/api/hardskill/${skillId}/highlight`;
+      
+      const response = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (response.ok) {
+        console.log(`Hard skill ${isCurrentlyHighlighted ? 'desmarcada' : 'marcada'} como favorita`);
+        
+        // Atualizar localmente em vez de recarregar toda a página
+        const updatedSkill = await response.json();
+        setColaborador(prev => {
+          if (!prev) return null;
+          
+          return {
+            ...prev,
+            hardSkills: prev.hardSkills.map(skill => 
+              skill.id === skillId ? updatedSkill : skill
+            )
+          };
+        });
+      } else {
+        const errorText = await response.text();
+        console.error("Falha ao alterar destaque da skill:", errorText);
+        alert(`Erro: ${errorText}`);
+      }
+    } catch (error) {
+      console.error("Erro ao alterar destaque:", error);
+      alert(`Erro ao alterar destaque: ${error}`);
+    }
+  };
+
+  /**
+   * Reordena as skills destacadas usando drag-and-drop
+   */
+  const reordenarHighlightedSkills = async (draggedId: number, targetId: number) => {
+    if (!colaborador || draggedId === targetId) return;
+
+    // Atualizar localmente primeiro para feedback imediato
+    setColaborador(prev => {
+      if (!prev) return null;
+
+      const highlighted = prev.hardSkills
+        .filter(s => s.isHighlighted)
+        .sort((a, b) => (a.orderPosition || 0) - (b.orderPosition || 0));
+
+      const draggedIndex = highlighted.findIndex(s => s.id === draggedId);
+      const targetIndex = highlighted.findIndex(s => s.id === targetId);
+
+      if (draggedIndex === -1 || targetIndex === -1) return prev;
+
+      // Reordenar
+      const reordered = [...highlighted];
+      const [removed] = reordered.splice(draggedIndex, 1);
+      reordered.splice(targetIndex, 0, removed);
+
+      // Atualizar orderPosition
+      const updatedHighlighted = reordered.map((skill, index) => ({
+        ...skill,
+        orderPosition: index + 1
+      }));
+
+      // Mesclar com as não destacadas
+      const nonHighlighted = prev.hardSkills.filter(s => !s.isHighlighted);
+
+      return {
+        ...prev,
+        hardSkills: [...updatedHighlighted, ...nonHighlighted]
+      };
+    });
+
+    // Sincronizar com o backend
+    try {
+      const highlighted = colaborador.hardSkills
+        .filter(s => s.isHighlighted)
+        .sort((a, b) => (a.orderPosition || 0) - (b.orderPosition || 0));
+
+      const draggedIndex = highlighted.findIndex(s => s.id === draggedId);
+      const targetIndex = highlighted.findIndex(s => s.id === targetId);
+
+      const reordered = [...highlighted];
+      const [removed] = reordered.splice(draggedIndex, 1);
+      reordered.splice(targetIndex, 0, removed);
+
+      // Atualizar no backend
+      for (let i = 0; i < reordered.length; i++) {
+        const skill = reordered[i];
+        const newPosition = i + 1;
+        
+        if (skill.orderPosition !== newPosition) {
+          await fetch(`${API_BASE_URL}/api/hardskill/${skill.id}/order/${newPosition}`, {
+            method: 'PATCH',
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao reordenar skills:", error);
+      // Recarregar do backend em caso de erro
+      await buscarColaborador();
+    }
+  };
+
+  // Estado para controle de drag-and-drop
+  const [draggedSkillId, setDraggedSkillId] = useState<number | null>(null);
+
 
   /**
    * Adiciona uma nova experiência.
@@ -995,12 +1133,40 @@ export default function PaginaPerfil() {
       doc.text('HARD SKILLS', margin, yPos);
       yPos += 8;
 
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      const hardSkillsText = colaborador.hardSkills.map(skill => skill.nomeCompetencia).join(', ');
-      const hardSkillsLines = doc.splitTextToSize(hardSkillsText, pageWidth - 2 * margin);
-      doc.text(hardSkillsLines, margin, yPos);
-      yPos += hardSkillsLines.length * 5 + 8;
+      // Top 3 Highlighted Skills
+      const highlightedSkills = colaborador.hardSkills
+        .filter(s => s.isHighlighted)
+        .sort((a, b) => (a.orderPosition || 0) - (b.orderPosition || 0));
+      
+      if (highlightedSkills.length > 0) {
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(218, 165, 32); // Dourado
+        doc.text('⭐ TOP 3 - SUAS MELHORES SKILLS:', margin, yPos);
+        yPos += 6;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        highlightedSkills.forEach((skill, idx) => {
+          doc.text(`${idx + 1}º - ${skill.nomeCompetencia}`, margin + 5, yPos);
+          yPos += 5;
+        });
+        yPos += 3;
+      }
+
+      // Outras Skills
+      const otherSkills = colaborador.hardSkills.filter(s => !s.isHighlighted);
+      if (otherSkills.length > 0) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const hardSkillsText = otherSkills.map(skill => skill.nomeCompetencia).join(', ');
+        const hardSkillsLines = doc.splitTextToSize(`Demais: ${hardSkillsText}`, pageWidth - 2 * margin);
+        doc.text(hardSkillsLines, margin, yPos);
+        yPos += hardSkillsLines.length * 5;
+      }
+      
+      yPos += 8;
     }
 
     // Soft Skills
@@ -1274,26 +1440,97 @@ export default function PaginaPerfil() {
             <div className="flex items-center gap-3 mb-6">
               <Code className="h-6 w-6 text-blue-500" />
               <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Hard Skills</h2>
-            </div>
-            <div className="flex flex-wrap gap-2 mb-6">
-              {hardSkills.map((skill) => (
-                <span
-                  key={skill.id}
-                  className="group px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full text-sm font-medium flex items-center gap-2 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
-                >
-                  {skill.nomeCompetencia}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removerHardSkill(skill.id);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    type="button"
-                  >
-                    <X className="h-3 w-3 text-blue-900 dark:text-blue-100" />
-                  </button>
+              {emEdicao && (
+                <span className="text-xs bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full ml-auto">
+                  {hardSkills.filter(s => s.isHighlighted).length}/3 destaque(s)
                 </span>
-              ))}
+              )}
+            </div>
+            
+            {/* Top 3 Skills Destacadas */}
+            {hardSkills.some(s => s.isHighlighted) && (
+              <div className="mb-4 pb-4 border-b border-yellow-200 dark:border-yellow-900">
+                <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 mb-2">
+                  ⭐ TOP 3 - SUAS MELHORES SKILLS
+                  {emEdicao && <span className="text-xs font-normal ml-2">(arraste para reordenar)</span>}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {hardSkills
+                    .filter(skill => skill.isHighlighted)
+                    .sort((a, b) => (a.orderPosition || 0) - (b.orderPosition || 0))
+                    .map((skill) => (
+                      <button
+                        key={skill.id}
+                        onClick={() => emEdicao && toggleHighlightHardSkill(skill.id, true)}
+                        draggable={emEdicao}
+                        onDragStart={(e) => {
+                          if (!emEdicao) return;
+                          setDraggedSkillId(skill.id);
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.currentTarget.style.opacity = '0.5';
+                        }}
+                        onDragEnd={(e) => {
+                          if (!emEdicao) return;
+                          setDraggedSkillId(null);
+                          e.currentTarget.style.opacity = '1';
+                        }}
+                        onDragOver={(e) => {
+                          if (!emEdicao || !draggedSkillId) return;
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                        }}
+                        onDrop={(e) => {
+                          if (!emEdicao || !draggedSkillId) return;
+                          e.preventDefault();
+                          reordenarHighlightedSkills(draggedSkillId, skill.id);
+                        }}
+                        className={`group px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 rounded-full text-sm font-bold flex items-center gap-2 transition-all shadow-lg border-2 border-yellow-600 hover:shadow-xl ${
+                          emEdicao ? 'cursor-move' : 'cursor-default'
+                        } ${draggedSkillId === skill.id ? 'opacity-50' : ''}`}
+                        type="button"
+                        disabled={!emEdicao}
+                      >
+                        {`${skill.orderPosition}º`}
+                        <span>{skill.nomeCompetencia}</span>
+                        {emEdicao && (
+                          <X className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Outras Skills */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {hardSkills
+                .filter(skill => !skill.isHighlighted)
+                .map((skill) => (
+                  <button
+                    key={skill.id}
+                    onClick={() => emEdicao && toggleHighlightHardSkill(skill.id, false)}
+                    type="button"
+                    disabled={!emEdicao}
+                    className="group px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full text-sm font-medium flex items-center gap-2 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors cursor-pointer disabled:cursor-default"
+                    title={emEdicao ? "Clique para destacar como top 3" : ""}
+                  >
+                    {skill.nomeCompetencia}
+                    {emEdicao ? (
+                      <span className="text-xs opacity-50">☆</span>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removerHardSkill(skill.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        type="button"
+                      >
+                        <X className="h-3 w-3 text-blue-900 dark:text-blue-100" />
+                      </button>
+                    )}
+                  </button>
+                ))}
             </div>
             <div className="flex justify-center mt-auto">
               <div className="flex gap-2 w-full max-w-sm">

@@ -9,10 +9,12 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 interface Colaborador {
   id: number;
   nome: string;
-  cargo: {
-    nomeCargo: string;
-  } | null;
+  cargoNome: string;
   email: string;
+  profilePicturePath?: string;
+  totalHardSkills?: number;
+  totalSoftSkills?: number;
+  totalCertificacoes?: number;
 }
 
 export default function VisaoColaboradores() {
@@ -38,7 +40,7 @@ export default function VisaoColaboradores() {
   const pegaTodaAGalerinha = async () => {
     setCarregando(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/colaborador`);
+      const response = await fetch(`${API_BASE_URL}/api/colaborador/list`);
       const data = await response.json();
       setListaColaboradores(data);
       // montar mapa de certificacoes por colaborador (se vierem no payload)
@@ -69,17 +71,19 @@ export default function VisaoColaboradores() {
   useEffect(() => {
     const carregarContagens = async () => {
       try {
-        const [hardRes, softRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/hardskill`),
-          fetch(`${API_BASE_URL}/api/softskill`)
+        const [hardRes, softRes, softMapRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/hardskill/light`),
+          fetch(`${API_BASE_URL}/api/softskill/light`),
+          fetch(`${API_BASE_URL}/api/softskill/colaborador-map`)
         ]);
         const hard = hardRes.ok ? await hardRes.json() : [];
         const soft = softRes.ok ? await softRes.json() : [];
+        const softMap = softMapRes.ok ? await softMapRes.json() : [];
 
         const hMap = new Map<number, number>();
         const hNames = new Map<number, Set<string>>();
         for (const h of hard) {
-          const id = h?.colaborador?.id;
+          const id = h?.colaboradorId;
           if (typeof id === 'number') hMap.set(id, (hMap.get(id) || 0) + 1);
           if (typeof id === 'number' && h?.nomeCompetencia) {
             const set = hNames.get(id) || new Set<string>();
@@ -87,17 +91,21 @@ export default function VisaoColaboradores() {
             hNames.set(id, set);
           }
         }
-        const sMap = new Map<number, number>();
+        
         const sNames = new Map<number, Set<string>>();
-        for (const s of soft) {
-          const id = s?.colaborador?.id;
-          if (typeof id === 'number') sMap.set(id, (sMap.get(id) || 0) + 1);
-          if (typeof id === 'number' && s?.nomeCompetencia) {
-            const set = sNames.get(id) || new Set<string>();
-            set.add(s.nomeCompetencia);
-            sNames.set(id, set);
-          }
+        for (const item of softMap) {
+            const { colaboradorId, nomeCompetencia } = item;
+            if (!sNames.has(colaboradorId)) {
+                sNames.set(colaboradorId, new Set());
+            }
+            sNames.get(colaboradorId)!.add(nomeCompetencia);
         }
+
+        const sMap = new Map<number, number>();
+        for (const [colabId, skills] of sNames.entries()) {
+            sMap.set(colabId, skills.size);
+        }
+
         setHardPorColab(hMap);
         setSoftPorColab(sMap);
         setHardPorColabNomes(hNames);
@@ -205,7 +213,7 @@ export default function VisaoColaboradores() {
             <option value="">Filtrar por Hard Skill</option>
             {hardOpcoes.map(op => (<option key={op} value={op}>{op}</option>))}
           </select>
-          <select value={filtroSoft} onChange={e=>setFiltroSoft(e.target.value)} className="px-3 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100">
+          <select value={filtroSoft} onChange={e=>{ setFiltroSoft(e.target.value); }} className="px-3 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100">
             <option value="">Filtrar por Soft Skill</option>
             {softOpcoes.map(op => (<option key={op} value={op}>{op}</option>))}
           </select>
@@ -226,8 +234,8 @@ export default function VisaoColaboradores() {
           ) : (
             <ul className="space-y-3">
               {colaboradoresFiltrados.map(colab => {
-                const hard = hardPorColab.get(colab.id) || 0;
-                const soft = softPorColab.get(colab.id) || 0;
+                const hard = hardPorColab.get(colab.id) || colab.totalHardSkills || 0;
+                const soft = softPorColab.get(colab.id) || colab.totalSoftSkills || 0;
                 return (
                 <li 
                     key={colab.id} 
@@ -236,7 +244,7 @@ export default function VisaoColaboradores() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-gray-800 dark:text-gray-100">{colab.nome}</p>
-                        <p className={`${colaboradorSelecionado?.id === colab.id ? 'text-blue-200' : 'text-gray-600 dark:text-gray-300'} text-sm`}>{colab.cargo?.nomeCargo}</p>
+                        <p className={`${colaboradorSelecionado?.id === colab.id ? 'text-blue-200' : 'text-gray-600 dark:text-gray-300'} text-sm`}>{colab.cargoNome}</p>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
                         <span className={`px-2 py-1 rounded-full ${colaboradorSelecionado?.id === colab.id ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'}`}>Hard {hard}</span>
@@ -260,7 +268,7 @@ export default function VisaoColaboradores() {
                     </div>
                     <div>
                         <h3 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{colaboradorSelecionado.nome}</h3>
-                        <p className="text-lg text-gray-600 dark:text-gray-300">{colaboradorSelecionado.cargo?.nomeCargo}</p>
+                        <p className="text-lg text-gray-600 dark:text-gray-300">{colaboradorSelecionado.cargoNome}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{colaboradorSelecionado.email}</p>
                     </div>
                 </div>

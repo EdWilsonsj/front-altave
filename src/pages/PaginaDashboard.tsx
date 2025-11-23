@@ -25,13 +25,12 @@ interface Colaborador {
 interface HardSkillItem {
   id: number;
   nomeCompetencia: string;
-  colaborador?: { id: number };
+  colaboradorId?: number;
 }
 
 interface SoftSkillItem {
   id: number;
   nomeCompetencia: string;
-  colaborador?: { id: number };
 }
 
 export default function PaginaDashboard() {
@@ -57,33 +56,15 @@ export default function PaginaDashboard() {
     if (view !== 'dashboard' || !colaborador) return;
     setLoadingKpis(true);
     Promise.all([
-      fetch(`${API_BASE_URL}/api/colaborador`).then(r => r.ok ? r.json() : []),
+      fetch(`${API_BASE_URL}/api/colaborador/count`).then(r => r.ok ? r.json() : { total: 0 }),
       fetch(`${API_BASE_URL}/api/competencia`).then(r => r.ok ? r.json() : [])
     ])
-      .then(([colabs, competencias]) => {
-        setNumColaboradores(Array.isArray(colabs) ? colabs.length : 0);
+      .then(([countResponse, competencias]) => {
+        setNumColaboradores(countResponse.total || 0);
         setNumCompetencias(Array.isArray(competencias) ? competencias.length : 0);
-
-        // Top certificações a partir dos colaboradores (se vierem no payload)
-        try {
-          if (Array.isArray(colabs)) {
-            const map = new Map<string, number>();
-            for (const c of colabs) {
-              const lista = Array.isArray(c?.certificacoes) ? c.certificacoes : [];
-              for (const cert of lista) {
-                const nome = cert?.nomeCertificacao?.trim();
-                if (!nome) continue;
-                map.set(nome, (map.get(nome) || 0) + 1);
-              }
-            }
-            const top3 = [...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3);
-            setTopCerts(top3);
-          } else {
-            setTopCerts([]);
-          }
-        } catch {
-          setTopCerts([]);
-        }
+        // Note: Top certificacoes agora vem do endpoint /api/colaborador (legado) se necessario
+        // Por enquanto, deixamos vazio para não fazer query pesada
+        setTopCerts([]);
       })
       .catch(() => {
         setNumColaboradores(0);
@@ -161,19 +142,13 @@ export default function PaginaDashboard() {
   const rankingColaboradores = useMemo(() => {
     const countByColab = new Map<number, { hard: number; soft: number; total: number }>();
     for (const h of hardSkills) {
-      const id = h.colaborador?.id;
+      const id = h.colaboradorId;
       if (typeof id !== 'number') continue;
       const cur = countByColab.get(id) || { hard: 0, soft: 0, total: 0 };
       cur.hard += 1; cur.total += 1;
       countByColab.set(id, cur);
     }
-    for (const s of softSkills) {
-      const id = s.colaborador?.id;
-      if (typeof id !== 'number') continue;
-      const cur = countByColab.get(id) || { hard: 0, soft: 0, total: 0 };
-      cur.soft += 1; cur.total += 1;
-      countByColab.set(id, cur);
-    }
+    // SoftSkills não têm colaboradorId direto (ManyToMany), então não contamos aqui
     return [...countByColab.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 10);
   }, [hardSkills, softSkills]);
 

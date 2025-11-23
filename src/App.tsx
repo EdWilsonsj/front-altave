@@ -18,6 +18,8 @@ const PaginaCadastro = lazy(() => import(/* @vite-ignore */ "./pages/PaginaCadas
 const PaginaPerfil = lazy(() => import(/* @vite-ignore */ "./pages/PaginaPerfil.tsx"));
 // @ts-expect-error
 const PaginaDashboard = lazy(() => import(/* @vite-ignore */ "./pages/PaginaDashboard.tsx"));
+// @ts-expect-error
+const MinhaEquipe = lazy(() => import(/* @vite-ignore */ "./pages/MinhaEquipe.tsx"));
 // Componente interno para aguardar inicialização do Auth
 function AppContent() {
   const { isLoading } = useAuth();
@@ -70,6 +72,16 @@ function AppContent() {
             <ProtectedRoute requireAdmin={true}>
               <SupervisorLayout>
                 <PaginaPerfil />
+              </SupervisorLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/minha-equipe" 
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <SupervisorLayout>
+                <MinhaEquipe />
               </SupervisorLayout>
             </ProtectedRoute>
           } 

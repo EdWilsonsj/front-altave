@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, LayoutDashboard, LogOut } from 'lucide-react';
+import { User, LayoutDashboard, LogOut, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
@@ -14,8 +14,8 @@ const Sidebar: React.FC<SidebarProps> = ({ userId }) => {
 
   const linkClasses = (path: string) => {
     return location.pathname === path
-      ? 'flex items-center p-3 bg-altave-primary text-white rounded-lg'
-      : 'flex items-center p-3 text-gray-800 hover:bg-altave-soft-blue dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors';
+      ? 'flex items-center p-3 bg-blue-600 text-white rounded-lg'
+      : 'flex items-center p-3 text-gray-800 hover:bg-blue-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors';
   };
 
   const handleLogout = () => {
@@ -30,9 +30,14 @@ const Sidebar: React.FC<SidebarProps> = ({ userId }) => {
         <p className="text-sm text-altave-text dark:text-gray-400">Gestão de Talentos</p>
       </div>
       <nav className="flex flex-col gap-4 flex-1">
+        {/* Menu de navegação */}
         <Link to={`/supervisor/profile/${userId}`} className={linkClasses(`/supervisor/profile/${userId}`)}>
           <User className="mr-3 h-6 w-6" />
           <span>Meu Perfil</span>
+        </Link>
+        <Link to="/minha-equipe" className={linkClasses('/minha-equipe')}>
+          <Users className="mr-3 h-6 w-6" />
+          <span>Minha Equipe</span>
         </Link>
         <Link to="/dashboard" className={linkClasses('/dashboard')}>
           <LayoutDashboard className="mr-3 h-6 w-6" />
