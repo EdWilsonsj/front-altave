@@ -44,9 +44,9 @@ const Layout: React.FC = () => {
   }
 
   return (
-    <div className="flex">
+    <div className="flex min-h-screen">
       <Sidebar userId={colaborador.id} />
-      <main className="flex-1 p-8 bg-altave-background dark:bg-gray-900">
+      <main className="flex-1 pt-16 px-4 pb-4 md:p-8 bg-altave-background dark:bg-gray-900 overflow-auto">
         <Outlet />
       </main>
     </div>
