@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Sun, Moon } from 'lucide-react';
+import BadgeDISC from '../components/BadgeDISC';
 import './MinhaEquipe.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -116,6 +117,11 @@ export default function MinhaEquipe() {
                   <h3>{sup.nome}</h3>
                   <p className="cargo">{sup.cargo}</p>
                   <p className="email">{sup.email}</p>
+                  {sup.perfil && (
+                    <div className="mt-2">
+                      <BadgeDISC usuarioId={sup.perfil} size="sm" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -133,6 +139,11 @@ export default function MinhaEquipe() {
                   <h3>{colab.nome}</h3>
                   <p className="cargo">{colab.cargo}</p>
                   <p className="email">{colab.email}</p>
+                  {colab.perfil && (
+                    <div className="mt-2">
+                      <BadgeDISC usuarioId={colab.perfil} size="sm" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -167,6 +178,11 @@ export default function MinhaEquipe() {
                   <h3>{colab.nome}</h3>
                   <p className="cargo">{colab.cargo}</p>
                   <p className="email">{colab.email}</p>
+                  {colab.perfil && (
+                    <div className="mt-2">
+                      <BadgeDISC usuarioId={colab.perfil} size="sm" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+interface HardSkillItem {
+  nomeCompetencia: string;
+}
 
+interface SoftSkillItem {
+  nomeCompetencia: string;
+}
 
 interface Colaborador {
   id: number;
@@ -18,7 +23,6 @@ interface Colaborador {
 }
 
 export default function VisaoColaboradores() {
-  const navigate = useNavigate();
   const [listaColaboradores, setListaColaboradores] = useState<Colaborador[]>([]);
   const [colaboradorSelecionado, setColaboradorSelecionado] = useState<Colaborador | null>(null);
   const [termoBusca, setTermoBusca] = useState('');
@@ -115,20 +119,21 @@ export default function VisaoColaboradores() {
         const hardOpts = Array.from(
           new Set(
             hard
-              .map((x: any) => x?.nomeCompetencia)
-              .filter((v: any) => typeof v === 'string' && v.length > 0)
+              .map((x: HardSkillItem) => x?.nomeCompetencia)
+              .filter((v: string | undefined): v is string => typeof v === 'string' && v.length > 0)
           )
         ).sort() as string[];
         const softOpts = Array.from(
           new Set(
             soft
-              .map((x: any) => x?.nomeCompetencia)
-              .filter((v: any) => typeof v === 'string' && v.length > 0)
+              .map((x: SoftSkillItem) => x?.nomeCompetencia)
+              .filter((v: string | undefined): v is string => typeof v === 'string' && v.length > 0)
           )
         ).sort() as string[];
         setHardOpcoes(hardOpts);
         setSoftOpcoes(softOpts);
-      } catch (_) {
+      } catch (error) {
+        console.error('Erro ao carregar contagens:', error);
         setHardPorColab(new Map());
         setSoftPorColab(new Map());
         setHardPorColabNomes(new Map());
@@ -146,21 +151,17 @@ export default function VisaoColaboradores() {
         const res = await fetch(`${API_BASE_URL}/api/colaborador/${colaboradorSelecionado.id}`);
         if (!res.ok) { setDetalhesSelecionado(null); return; }
         const data = await res.json();
-        const hard = Array.isArray(data?.hardSkills) ? data.hardSkills.map((s: any) => s.nomeCompetencia) : [];
-        const soft = Array.isArray(data?.softSkills) ? data.softSkills.map((s: any) => s.nomeCompetencia) : [];
+        const hard = Array.isArray(data?.hardSkills) ? data.hardSkills.map((s: HardSkillItem) => s.nomeCompetencia) : [];
+        const soft = Array.isArray(data?.softSkills) ? data.softSkills.map((s: SoftSkillItem) => s.nomeCompetencia) : [];
         setDetalhesSelecionado({ hard, soft });
-      } catch (_) {
+      } catch (error) {
+        console.error('Erro ao carregar detalhes:', error);
         setDetalhesSelecionado(null);
       }
     };
     carregarDetalhes();
   }, [colaboradorSelecionado]);
 
-  const handleProfileClick = () => {
-    if (!colaboradorSelecionado) return;
-    const profileId = colaboradorSelecionado.email === 'admin@altave.com.br' ? 1 : colaboradorSelecionado.id;
-    navigate(`/supervisor/profile/${profileId}`);
-  };
 
   // opções de certificações para filtro (derivado dos colaboradores carregados)
   useEffect(() => {
@@ -276,7 +277,7 @@ export default function VisaoColaboradores() {
                 {/* Perfil resumido do colaborador selecionado */}
                 <div className="mb-6">
                   <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Sobre</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{(detalhesSelecionado as any)?.apresentacao || 'Sem apresentação.'}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Sem apresentação.</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">

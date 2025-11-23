@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import BadgeDISC from '../components/BadgeDISC';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -1352,7 +1353,12 @@ export default function PaginaPerfil() {
                     className="text-3xl font-bold text-gray-800 dark:text-gray-100 bg-transparent border-b-2 border-blue-500 focus:outline-none"
                   />
                 ) : (
-                  <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{nome}</h1>
+                  <>
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{nome}</h1>
+                    {isAdmin && colaborador.perfil && (
+                      <BadgeDISC usuarioId={colaborador.perfil} size="md" />
+                    )}
+                  </>
                 )}
               </div>
 

@@ -1,23 +1,16 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { MessageSquare, User, Calendar, Send, Plus } from 'lucide-react';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const ComentariosColaborador = ({ colaboradorId, isAdmin = false, currentUserId }) => {
     const [comentarios, setComentarios] = useState([]);
-    const [colaboradores, setColaboradores] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [novoComentario, setNovoComentario] = useState('');
     const [sending, setSending] = useState(false);
-    useEffect(() => {
-        loadComentarios();
-        if (isAdmin) {
-            loadColaboradores();
-        }
-    }, [colaboradorId]);
-    const loadComentarios = async () => {
+    const loadComentarios = useCallback(async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/comentario/colaborador/${colaboradorId}`);
             if (response.ok) {
@@ -45,19 +38,10 @@ const ComentariosColaborador = ({ colaboradorId, isAdmin = false, currentUserId 
         finally {
             setLoading(false);
         }
-    };
-    const loadColaboradores = async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/colaborador`);
-            if (response.ok) {
-                const data = await response.json();
-                setColaboradores(data);
-            }
-        }
-        catch (error) {
-            console.error('Erro ao carregar colaboradores:', error);
-        }
-    };
+    }, [colaboradorId]);
+    useEffect(() => {
+        loadComentarios();
+    }, [loadComentarios]);
     const handleSubmitComentario = async (e) => {
         e.preventDefault();
         if (!novoComentario.trim() || !currentUserId)

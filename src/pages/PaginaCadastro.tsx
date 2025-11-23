@@ -118,6 +118,7 @@ export default function PaginaCadastro() {
 
     setCarregando(true);
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { confirmarSenha, ...dadosParaEnviar } = dadosFormulario;
 
     try {

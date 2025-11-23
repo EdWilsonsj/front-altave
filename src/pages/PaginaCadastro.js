@@ -93,6 +93,7 @@ export default function PaginaCadastro() {
             return;
         }
         setCarregando(true);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { confirmarSenha, ...dadosParaEnviar } = dadosFormulario;
         try {
             const response = await fetch(`${API_BASE_URL}/api/usuario`, {

@@ -2,24 +2,28 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // Context
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
 // Components
 import ProtectedRoute from "./components/ProtectedRoute";
 import SupervisorLayout from "./components/SupervisorLayout";
+import DISCRedirect from "./components/DISCRedirect";
 
-import { lazy, Suspense } from "react";
+import { lazy } from "react";
 
 
- // @ts-expect-error
+ // @ts-expect-error - Dynamic import for code splitting
 const PaginaLogin = lazy(() => import(/* @vite-ignore */ "./pages/PaginaLogin.tsx"));
-// @ts-expect-error
+// @ts-expect-error - Dynamic import for code splitting
 const PaginaCadastro = lazy(() => import(/* @vite-ignore */ "./pages/PaginaCadastro.tsx"));
-// @ts-expect-error
+// @ts-expect-error - Dynamic import for code splitting
 const PaginaPerfil = lazy(() => import(/* @vite-ignore */ "./pages/PaginaPerfil.tsx"));
-// @ts-expect-error
+// @ts-expect-error - Dynamic import for code splitting
 const PaginaDashboard = lazy(() => import(/* @vite-ignore */ "./pages/PaginaDashboard.tsx"));
-// @ts-expect-error
+// @ts-expect-error - Dynamic import for code splitting
 const MinhaEquipe = lazy(() => import(/* @vite-ignore */ "./pages/MinhaEquipe.tsx"));
+// @ts-expect-error - Dynamic import for code splitting
+const PaginaQuestionarioDISC = lazy(() => import(/* @vite-ignore */ "./pages/PaginaQuestionarioDISC.tsx"));
+// @ts-expect-error - Dynamic import for code splitting
+const PaginaResultadoDISC = lazy(() => import(/* @vite-ignore */ "./pages/PaginaResultadoDISC.tsx"));
 // Componente interno para aguardar inicialização do Auth
 function AppContent() {
   const { isLoading } = useAuth();
@@ -50,7 +54,27 @@ function AppContent() {
           path="/profile/:id" 
           element={
             <ProtectedRoute>
-              <PaginaPerfil />
+              <DISCRedirect>
+                <PaginaPerfil />
+              </DISCRedirect>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Rotas do DISC (protegidas) */}
+        <Route 
+          path="/disc/questionario" 
+          element={
+            <ProtectedRoute>
+              <PaginaQuestionarioDISC />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/disc/resultado" 
+          element={
+            <ProtectedRoute>
+              <PaginaResultadoDISC />
             </ProtectedRoute>
           } 
         />

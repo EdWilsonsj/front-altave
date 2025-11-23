@@ -1,7 +1,7 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-//@ts-expect-error
+// @ts-expect-error - Dynamic App import
 import App from './App.tsx';
 import './index.css';
 ReactDOM.createRoot(document.getElementById("root")).render(_jsx(React.StrictMode, { children: _jsx(App, {}) }));

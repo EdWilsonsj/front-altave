@@ -10,7 +10,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 export default function PaginaDashboard() {
     const [numColaboradores, setNumColaboradores] = useState(0);
     const [numCompetencias, setNumCompetencias] = useState(0);
-    const [numDesatualizados, _setNumDesatualizados] = useState('N/A');
+    const [numDesatualizados] = useState('N/A');
     const [view, setView] = useState('dashboard'); // 'dashboard' or 'colaboradores'
     const { colaborador } = useAuth();
     const [modoEscuro, setModoEscuro] = useState(() => {
@@ -24,7 +24,7 @@ export default function PaginaDashboard() {
     const [softSkills, setSoftSkills] = useState([]);
     const [loadingKpis, setLoadingKpis] = useState(false);
     const [loadingSkills, setLoadingSkills] = useState(false);
-    const [topCerts, setTopCerts] = useState([]);
+    const [topCerts] = useState([]);
     useEffect(() => {
         if (view !== 'dashboard' || !colaborador)
             return;
@@ -36,14 +36,10 @@ export default function PaginaDashboard() {
             .then(([countResponse, competencias]) => {
             setNumColaboradores(countResponse.total || 0);
             setNumCompetencias(Array.isArray(competencias) ? competencias.length : 0);
-            // Note: Top certificacoes agora vem do endpoint /api/colaborador (legado) se necessario
-            // Por enquanto, deixamos vazio para não fazer query pesada
-            setTopCerts([]);
         })
             .catch(() => {
             setNumColaboradores(0);
             setNumCompetencias(0);
-            setTopCerts([]);
         })
             .finally(() => setLoadingKpis(false));
     }, [view, colaborador]);
@@ -111,21 +107,6 @@ export default function PaginaDashboard() {
         const map = contarPorNome(softSkills);
         return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
     }, [softSkills]);
-    // ranking de colaboradores por total de competências (hard + soft)
-    const rankingColaboradores = useMemo(() => {
-        const countByColab = new Map();
-        for (const h of hardSkills) {
-            const id = h.colaboradorId;
-            if (typeof id !== 'number')
-                continue;
-            const cur = countByColab.get(id) || { hard: 0, soft: 0, total: 0 };
-            cur.hard += 1;
-            cur.total += 1;
-            countByColab.set(id, cur);
-        }
-        // SoftSkills não têm colaboradorId direto (ManyToMany), então não contamos aqui
-        return [...countByColab.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 10);
-    }, [hardSkills, softSkills]);
     const maxHardCount = useMemo(() => topHard[0]?.[1] || 1, [topHard]);
     const maxSoftCount = useMemo(() => topSoft[0]?.[1] || 1, [topSoft]);
     // O ProtectedRoute já garante que o usuário é admin e está autenticado

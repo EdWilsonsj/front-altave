@@ -1,10 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, useEffect, useMemo } from 'react';
 import { Search, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 export default function VisaoColaboradores() {
-    const navigate = useNavigate();
     const [listaColaboradores, setListaColaboradores] = useState([]);
     const [colaboradorSelecionado, setColaboradorSelecionado] = useState(null);
     const [termoBusca, setTermoBusca] = useState('');
@@ -102,7 +100,8 @@ export default function VisaoColaboradores() {
                 setHardOpcoes(hardOpts);
                 setSoftOpcoes(softOpts);
             }
-            catch (_) {
+            catch (error) {
+                console.error('Erro ao carregar contagens:', error);
                 setHardPorColab(new Map());
                 setSoftPorColab(new Map());
                 setHardPorColabNomes(new Map());
@@ -129,18 +128,13 @@ export default function VisaoColaboradores() {
                 const soft = Array.isArray(data?.softSkills) ? data.softSkills.map((s) => s.nomeCompetencia) : [];
                 setDetalhesSelecionado({ hard, soft });
             }
-            catch (_) {
+            catch (error) {
+                console.error('Erro ao carregar detalhes:', error);
                 setDetalhesSelecionado(null);
             }
         };
         carregarDetalhes();
     }, [colaboradorSelecionado]);
-    const handleProfileClick = () => {
-        if (!colaboradorSelecionado)
-            return;
-        const profileId = colaboradorSelecionado.email === 'admin@altave.com.br' ? 1 : colaboradorSelecionado.id;
-        navigate(`/supervisor/profile/${profileId}`);
-    };
     // opções de certificações para filtro (derivado dos colaboradores carregados)
     useEffect(() => {
         const all = new Set();
@@ -178,7 +172,7 @@ export default function VisaoColaboradores() {
                                     const hard = hardPorColab.get(colab.id) || colab.totalHardSkills || 0;
                                     const soft = softPorColab.get(colab.id) || colab.totalSoftSkills || 0;
                                     return (_jsx("li", { onClick: () => setColaboradorSelecionado(colab), className: `p-4 rounded-xl cursor-pointer transition-all ${colaboradorSelecionado?.id === colab.id ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-50 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-gray-600'}`, children: _jsxs("div", { className: "flex items-start justify-between gap-3", children: [_jsxs("div", { children: [_jsx("p", { className: "font-semibold text-gray-800 dark:text-gray-100", children: colab.nome }), _jsx("p", { className: `${colaboradorSelecionado?.id === colab.id ? 'text-blue-200' : 'text-gray-600 dark:text-gray-300'} text-sm`, children: colab.cargoNome })] }), _jsxs("div", { className: "flex items-center gap-2 text-xs", children: [_jsxs("span", { className: `px-2 py-1 rounded-full ${colaboradorSelecionado?.id === colab.id ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'}`, children: ["Hard ", hard] }), _jsxs("span", { className: `px-2 py-1 rounded-full ${colaboradorSelecionado?.id === colab.id ? 'bg-green-500 text-white' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'}`, children: ["Soft ", soft] })] })] }) }, colab.id));
-                                }) }))] }), _jsx("div", { className: "lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700", children: colaboradorSelecionado ? (_jsxs("div", { children: [_jsxs("div", { className: "flex items-center gap-6 mb-6", children: [_jsx("div", { className: "w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-xl", children: colaboradorSelecionado.nome.substring(0, 2).toUpperCase() }), _jsxs("div", { children: [_jsx("h3", { className: "text-3xl font-bold text-gray-800 dark:text-gray-100", children: colaboradorSelecionado.nome }), _jsx("p", { className: "text-lg text-gray-600 dark:text-gray-300", children: colaboradorSelecionado.cargoNome }), _jsx("p", { className: "text-sm text-gray-500 dark:text-gray-400 mt-1", children: colaboradorSelecionado.email })] })] }), _jsxs("div", { className: "mb-6", children: [_jsx("h4", { className: "text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2", children: "Sobre" }), _jsx("p", { className: "text-sm text-gray-600 dark:text-gray-300", children: detalhesSelecionado?.apresentacao || 'Sem apresentação.' })] }), _jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [_jsxs("div", { className: "p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600", children: [_jsx("h4", { className: "font-semibold text-gray-800 dark:text-gray-100 mb-2", children: "Hard Skills" }), detalhesSelecionado?.hard?.length ? (_jsx("div", { className: "flex flex-wrap gap-2", children: detalhesSelecionado.hard.map((h, idx) => (_jsx("span", { className: "px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs", children: h }, idx))) })) : (_jsx("p", { className: "text-sm text-gray-500 dark:text-gray-300", children: "Sem hard skills cadastradas." }))] }), _jsxs("div", { className: "p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600", children: [_jsx("h4", { className: "font-semibold text-gray-800 dark:text-gray-100 mb-2", children: "Soft Skills" }), detalhesSelecionado?.soft?.length ? (_jsx("div", { className: "flex flex-wrap gap-2", children: detalhesSelecionado.soft.map((s, idx) => (_jsx("span", { className: "px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-xs", children: s }, idx))) })) : (_jsx("p", { className: "text-sm text-gray-500 dark:text-gray-300", children: "Sem soft skills cadastradas." }))] })] }), _jsxs("div", { className: "mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600", children: [_jsx("h4", { className: "font-semibold text-gray-800 dark:text-gray-100 mb-2", children: "Certifica\u00E7\u00F5es" }), (() => {
+                                }) }))] }), _jsx("div", { className: "lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700", children: colaboradorSelecionado ? (_jsxs("div", { children: [_jsxs("div", { className: "flex items-center gap-6 mb-6", children: [_jsx("div", { className: "w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-xl", children: colaboradorSelecionado.nome.substring(0, 2).toUpperCase() }), _jsxs("div", { children: [_jsx("h3", { className: "text-3xl font-bold text-gray-800 dark:text-gray-100", children: colaboradorSelecionado.nome }), _jsx("p", { className: "text-lg text-gray-600 dark:text-gray-300", children: colaboradorSelecionado.cargoNome }), _jsx("p", { className: "text-sm text-gray-500 dark:text-gray-400 mt-1", children: colaboradorSelecionado.email })] })] }), _jsxs("div", { className: "mb-6", children: [_jsx("h4", { className: "text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2", children: "Sobre" }), _jsx("p", { className: "text-sm text-gray-600 dark:text-gray-300", children: "Sem apresenta\u00E7\u00E3o." })] }), _jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [_jsxs("div", { className: "p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600", children: [_jsx("h4", { className: "font-semibold text-gray-800 dark:text-gray-100 mb-2", children: "Hard Skills" }), detalhesSelecionado?.hard?.length ? (_jsx("div", { className: "flex flex-wrap gap-2", children: detalhesSelecionado.hard.map((h, idx) => (_jsx("span", { className: "px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs", children: h }, idx))) })) : (_jsx("p", { className: "text-sm text-gray-500 dark:text-gray-300", children: "Sem hard skills cadastradas." }))] }), _jsxs("div", { className: "p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600", children: [_jsx("h4", { className: "font-semibold text-gray-800 dark:text-gray-100 mb-2", children: "Soft Skills" }), detalhesSelecionado?.soft?.length ? (_jsx("div", { className: "flex flex-wrap gap-2", children: detalhesSelecionado.soft.map((s, idx) => (_jsx("span", { className: "px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-xs", children: s }, idx))) })) : (_jsx("p", { className: "text-sm text-gray-500 dark:text-gray-300", children: "Sem soft skills cadastradas." }))] })] }), _jsxs("div", { className: "mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600", children: [_jsx("h4", { className: "font-semibold text-gray-800 dark:text-gray-100 mb-2", children: "Certifica\u00E7\u00F5es" }), (() => {
                                             const set = certPorColabNomes.get(colaboradorSelecionado.id);
                                             if (!set || set.size === 0)
                                                 return _jsx("p", { className: "text-sm text-gray-500 dark:text-gray-300", children: "Sem certifica\u00E7\u00F5es." });

@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-//@ts-expect-error
+// @ts-expect-error - Dynamic App import
 import App from './App.tsx';
 import './index.css'
 

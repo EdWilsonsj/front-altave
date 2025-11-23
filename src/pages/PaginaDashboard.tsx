@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Users, BarChart2, AlertTriangle, ArrowLeft, Sun, Moon, Award, Code, User as UserIcon, ChevronRight } from 'lucide-react';
+import { Users, BarChart2, AlertTriangle, ArrowLeft, Sun, Moon, Award, Code, User as UserIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import VisaoColaboradores from '../components/dashboard/VisaoColaboradores';
@@ -8,19 +8,6 @@ import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
-// Interfaces que espelham os modelos do backend
-interface Cargo {
-  nomeCargo: string;
-}
-
-interface Colaborador {
-  id: number;
-  nome: string;
-  email: string;
-  apresentacao: string;
-  perfil: number;
-  cargo: Cargo;
-}
 
 interface HardSkillItem {
   id: number;
@@ -36,7 +23,7 @@ interface SoftSkillItem {
 export default function PaginaDashboard() {
   const [numColaboradores, setNumColaboradores] = useState(0);
   const [numCompetencias, setNumCompetencias] = useState(0);
-  const [numDesatualizados, _setNumDesatualizados] = useState<number | string>('N/A');
+  const [numDesatualizados] = useState<number | string>('N/A');
   const [view, setView] = useState('dashboard'); // 'dashboard' or 'colaboradores'
   const { colaborador } = useAuth();
   const [modoEscuro, setModoEscuro] = useState<boolean>(() => {
@@ -50,7 +37,7 @@ export default function PaginaDashboard() {
   const [softSkills, setSoftSkills] = useState<SoftSkillItem[]>([]);
   const [loadingKpis, setLoadingKpis] = useState(false);
   const [loadingSkills, setLoadingSkills] = useState(false);
-  const [topCerts, setTopCerts] = useState<Array<[string, number]>>([]);
+  const [topCerts] = useState<Array<[string, number]>>([]);
 
   useEffect(() => {
     if (view !== 'dashboard' || !colaborador) return;
@@ -62,14 +49,10 @@ export default function PaginaDashboard() {
       .then(([countResponse, competencias]) => {
         setNumColaboradores(countResponse.total || 0);
         setNumCompetencias(Array.isArray(competencias) ? competencias.length : 0);
-        // Note: Top certificacoes agora vem do endpoint /api/colaborador (legado) se necessario
-        // Por enquanto, deixamos vazio para não fazer query pesada
-        setTopCerts([]);
       })
       .catch(() => {
         setNumColaboradores(0);
         setNumCompetencias(0);
-        setTopCerts([]);
       })
       .finally(() => setLoadingKpis(false));
   }, [view, colaborador]);
@@ -138,19 +121,6 @@ export default function PaginaDashboard() {
     return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
   }, [softSkills]);
 
-  // ranking de colaboradores por total de competências (hard + soft)
-  const rankingColaboradores = useMemo(() => {
-    const countByColab = new Map<number, { hard: number; soft: number; total: number }>();
-    for (const h of hardSkills) {
-      const id = h.colaboradorId;
-      if (typeof id !== 'number') continue;
-      const cur = countByColab.get(id) || { hard: 0, soft: 0, total: 0 };
-      cur.hard += 1; cur.total += 1;
-      countByColab.set(id, cur);
-    }
-    // SoftSkills não têm colaboradorId direto (ManyToMany), então não contamos aqui
-    return [...countByColab.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 10);
-  }, [hardSkills, softSkills]);
 
   const maxHardCount = useMemo(() => topHard[0]?.[1] || 1, [topHard]);
   const maxSoftCount = useMemo(() => topSoft[0]?.[1] || 1, [topSoft]);

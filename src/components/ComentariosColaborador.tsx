@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { MessageSquare, User, Calendar, Send, Plus } from 'lucide-react';
@@ -14,11 +14,6 @@ interface Comentario {
   nomeColaboradorOrigem?: string;
 }
 
-interface Colaborador {
-  id: number;
-  nome: string;
-}
-
 interface ComentariosColaboradorProps {
   colaboradorId: number;
   isAdmin?: boolean;
@@ -31,20 +26,12 @@ const ComentariosColaborador: React.FC<ComentariosColaboradorProps> = ({
   currentUserId 
 }) => {
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
-  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [novoComentario, setNovoComentario] = useState('');
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    loadComentarios();
-    if (isAdmin) {
-      loadColaboradores();
-    }
-  }, [colaboradorId]);
-
-  const loadComentarios = async () => {
+  const loadComentarios = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/comentario/colaborador/${colaboradorId}`);
       if (response.ok) {
@@ -71,19 +58,13 @@ const ComentariosColaborador: React.FC<ComentariosColaboradorProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [colaboradorId]);
 
-  const loadColaboradores = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/colaborador`);
-      if (response.ok) {
-        const data = await response.json();
-        setColaboradores(data);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar colaboradores:', error);
-    }
-  };
+  useEffect(() => {
+    loadComentarios();
+  }, [loadComentarios]);
+
+
 
   const handleSubmitComentario = async (e: React.FormEvent) => {
     e.preventDefault();

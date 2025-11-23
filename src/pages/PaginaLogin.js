@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, Sun, Moon } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 export default function PaginaLogin() {
     // Hooks
     const navegar = useNavigate();
@@ -15,7 +15,7 @@ export default function PaginaLogin() {
             return false;
         return localStorage.getItem("theme") === "dark";
     });
-    // Redirecionar usuário já autenticado (validação já foi feita no AuthContext)
+    // Redirecionar usuário já autenticado
     useEffect(() => {
         if (isAuthenticated && colaborador) {
             const from = location.state?.from?.pathname || (isAdmin ? '/dashboard' : `/profile/${colaborador.id}`);
