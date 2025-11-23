@@ -78,6 +78,7 @@ interface Colaborador {
   email: string;
   apresentacao: string;
   perfil: number;
+  cpf?: string;
   cargo: Cargo;
   certificacoes: Certificacao[];
   experiencias: Experiencia[];

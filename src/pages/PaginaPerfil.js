@@ -205,33 +205,54 @@ export default function PaginaPerfil() {
         if (!colaborador)
             return;
         try {
+            // Only send basic profile fields, not collections
+            const updateData = {
+                nome: colaborador.nome,
+                email: colaborador.email,
+                apresentacao: colaborador.apresentacao,
+                cpf: colaborador.cpf,
+                perfil: colaborador.perfil,
+                cargo: colaborador.cargo ? { id: colaborador.cargo.id } : null
+            };
             const response = await fetch(`${API_BASE_URL}/api/colaborador/${colaborador.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(colaborador),
+                body: JSON.stringify(updateData),
             });
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
                 throw new Error('Falha ao salvar o perfil.');
             }
             const colaboradorAtualizado = await response.json();
+            // Preserve existing collections from current state
+            const updatedColaborador = {
+                ...colaboradorAtualizado,
+                softSkills: colaborador.softSkills,
+                hardSkills: colaborador.hardSkills,
+                experiencias: colaborador.experiencias,
+                certificacoes: colaborador.certificacoes,
+                projetos: colaborador.projetos
+            };
             // Aplicar correção de codificação nos dados atualizados também
-            if (colaboradorAtualizado.softSkills) {
-                colaboradorAtualizado.softSkills = colaboradorAtualizado.softSkills.map((skill) => ({
+            if (updatedColaborador.softSkills) {
+                updatedColaborador.softSkills = updatedColaborador.softSkills.map((skill) => ({
                     ...skill,
                     nomeCompetencia: corrigirTexto(skill.nomeCompetencia)
                 }));
             }
-            if (colaboradorAtualizado.hardSkills) {
-                colaboradorAtualizado.hardSkills = colaboradorAtualizado.hardSkills.map((skill) => ({
+            if (updatedColaborador.hardSkills) {
+                updatedColaborador.hardSkills = updatedColaborador.hardSkills.map((skill) => ({
                     ...skill,
                     nomeCompetencia: corrigirTexto(skill.nomeCompetencia)
                 }));
             }
-            setColaborador(colaboradorAtualizado);
+            setColaborador(updatedColaborador);
             setEmEdicao(false);
             setColaboradorOriginal(null);
         }
         catch (error) {
+            console.error('Error saving profile:', error);
             alert("Erro ao salvar as alterações. Tente novamente.");
         }
     };
@@ -650,6 +671,104 @@ export default function PaginaPerfil() {
         }
     };
     /**
+     * Marca uma hard skill como destacada (top 3).
+     */
+    const toggleHighlightHardSkill = async (skillId, isCurrentlyHighlighted) => {
+        try {
+            const endpoint = isCurrentlyHighlighted
+                ? `${API_BASE_URL}/api/hardskill/${skillId}/unhighlight`
+                : `${API_BASE_URL}/api/hardskill/${skillId}/highlight`;
+            const response = await fetch(endpoint, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            if (response.ok) {
+                console.log(`Hard skill ${isCurrentlyHighlighted ? 'desmarcada' : 'marcada'} como favorita`);
+                // Atualizar localmente em vez de recarregar toda a página
+                const updatedSkill = await response.json();
+                setColaborador(prev => {
+                    if (!prev)
+                        return null;
+                    return {
+                        ...prev,
+                        hardSkills: prev.hardSkills.map(skill => skill.id === skillId ? updatedSkill : skill)
+                    };
+                });
+            }
+            else {
+                const errorText = await response.text();
+                console.error("Falha ao alterar destaque da skill:", errorText);
+                alert(`Erro: ${errorText}`);
+            }
+        }
+        catch (error) {
+            console.error("Erro ao alterar destaque:", error);
+            alert(`Erro ao alterar destaque: ${error}`);
+        }
+    };
+    /**
+     * Reordena as skills destacadas usando drag-and-drop
+     */
+    const reordenarHighlightedSkills = async (draggedId, targetId) => {
+        if (!colaborador || draggedId === targetId)
+            return;
+        // Atualizar localmente primeiro para feedback imediato
+        setColaborador(prev => {
+            if (!prev)
+                return null;
+            const highlighted = prev.hardSkills
+                .filter(s => s.isHighlighted)
+                .sort((a, b) => (a.orderPosition || 0) - (b.orderPosition || 0));
+            const draggedIndex = highlighted.findIndex(s => s.id === draggedId);
+            const targetIndex = highlighted.findIndex(s => s.id === targetId);
+            if (draggedIndex === -1 || targetIndex === -1)
+                return prev;
+            // Reordenar
+            const reordered = [...highlighted];
+            const [removed] = reordered.splice(draggedIndex, 1);
+            reordered.splice(targetIndex, 0, removed);
+            // Atualizar orderPosition
+            const updatedHighlighted = reordered.map((skill, index) => ({
+                ...skill,
+                orderPosition: index + 1
+            }));
+            // Mesclar com as não destacadas
+            const nonHighlighted = prev.hardSkills.filter(s => !s.isHighlighted);
+            return {
+                ...prev,
+                hardSkills: [...updatedHighlighted, ...nonHighlighted]
+            };
+        });
+        // Sincronizar com o backend
+        try {
+            const highlighted = colaborador.hardSkills
+                .filter(s => s.isHighlighted)
+                .sort((a, b) => (a.orderPosition || 0) - (b.orderPosition || 0));
+            const draggedIndex = highlighted.findIndex(s => s.id === draggedId);
+            const targetIndex = highlighted.findIndex(s => s.id === targetId);
+            const reordered = [...highlighted];
+            const [removed] = reordered.splice(draggedIndex, 1);
+            reordered.splice(targetIndex, 0, removed);
+            // Atualizar no backend
+            for (let i = 0; i < reordered.length; i++) {
+                const skill = reordered[i];
+                const newPosition = i + 1;
+                if (skill.orderPosition !== newPosition) {
+                    await fetch(`${API_BASE_URL}/api/hardskill/${skill.id}/order/${newPosition}`, {
+                        method: 'PATCH',
+                    });
+                }
+            }
+        }
+        catch (error) {
+            console.error("Erro ao reordenar skills:", error);
+            // Recarregar do backend em caso de erro
+            await buscarColaborador();
+        }
+    };
+    // Estado para controle de drag-and-drop
+    const [draggedSkillId, setDraggedSkillId] = useState(null);
+    /**
      * Adiciona uma nova experiência.
      */
     const adicionarExperiencia = async () => {
@@ -880,12 +999,36 @@ export default function PaginaPerfil() {
             doc.setFont('helvetica', 'bold');
             doc.text('HARD SKILLS', margin, yPos);
             yPos += 8;
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            const hardSkillsText = colaborador.hardSkills.map(skill => skill.nomeCompetencia).join(', ');
-            const hardSkillsLines = doc.splitTextToSize(hardSkillsText, pageWidth - 2 * margin);
-            doc.text(hardSkillsLines, margin, yPos);
-            yPos += hardSkillsLines.length * 5 + 8;
+            // Top 3 Highlighted Skills
+            const highlightedSkills = colaborador.hardSkills
+                .filter(s => s.isHighlighted)
+                .sort((a, b) => (a.orderPosition || 0) - (b.orderPosition || 0));
+            if (highlightedSkills.length > 0) {
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(218, 165, 32); // Dourado
+                doc.text('⭐ TOP 3 - SUAS MELHORES SKILLS:', margin, yPos);
+                yPos += 6;
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(0, 0, 0);
+                highlightedSkills.forEach((skill, idx) => {
+                    doc.text(`${idx + 1}º - ${skill.nomeCompetencia}`, margin + 5, yPos);
+                    yPos += 5;
+                });
+                yPos += 3;
+            }
+            // Outras Skills
+            const otherSkills = colaborador.hardSkills.filter(s => !s.isHighlighted);
+            if (otherSkills.length > 0) {
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                const hardSkillsText = otherSkills.map(skill => skill.nomeCompetencia).join(', ');
+                const hardSkillsLines = doc.splitTextToSize(`Demais: ${hardSkillsText}`, pageWidth - 2 * margin);
+                doc.text(hardSkillsLines, margin, yPos);
+                yPos += hardSkillsLines.length * 5;
+            }
+            yPos += 8;
         }
         // Soft Skills
         if (colaborador.softSkills && colaborador.softSkills.length > 0) {
@@ -983,10 +1126,36 @@ export default function PaginaPerfil() {
                                                                 if (selectedCargo) {
                                                                     setColaborador(prev => prev ? { ...prev, cargo: selectedCargo } : null);
                                                                 }
-                                                            }, className: "px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm", children: [_jsx("option", { value: "", children: "Selecione um cargo" }), cargosDisponiveis.map((cargo) => (_jsx("option", { value: cargo.id, children: cargo.nomeCargo }, cargo.id)))] })) : (_jsx("span", { children: cargo?.nomeCargo || 'N/A' }))] }), _jsxs("div", { className: "flex items-center gap-2", children: [_jsx(Mail, { className: "h-5 w-5 text-blue-500" }), _jsx("span", { children: email })] })] })] }), emEdicao ? (_jsxs("div", { className: "flex gap-2", children: [_jsx("button", { onClick: aoSalvar, className: "px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg", children: "Salvar" }), _jsx("button", { onClick: aoCancelar, className: "px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg", children: "Cancelar" })] })) : (_jsxs("div", { className: "flex gap-2", children: [_jsxs("button", { onClick: aoEditar, className: "px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg", children: [_jsx(Edit3, { className: "h-4 w-4" }), "Editar Perfil"] }), _jsxs("button", { onClick: exportarParaPDF, className: "px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg", children: [_jsx(Download, { className: "h-4 w-4" }), "Exportar PDF"] })] }))] }) }), _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6", children: [_jsxs("div", { className: "bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-gray-700", children: [_jsxs("div", { className: "flex items-center gap-3 mb-4", children: [_jsx(User, { className: "h-6 w-6 text-blue-500" }), _jsx("h2", { className: "text-xl font-bold text-gray-800 dark:text-gray-100", children: "Sobre mim" })] }), emEdicao ? (_jsx("textarea", { name: "apresentacao", value: apresentacao, onChange: aoMudarPerfil, maxLength: 2000, className: "w-full min-h-48 p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm resize-vertical" })) : (_jsx("p", { className: "text-gray-600 dark:text-gray-300 leading-relaxed text-sm whitespace-pre-line", children: apresentacao }))] }), _jsxs("div", { className: "bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-gray-700 flex flex-col min-h-[400px]", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx(Code, { className: "h-6 w-6 text-blue-500" }), _jsx("h2", { className: "text-xl font-bold text-gray-800 dark:text-gray-100", children: "Hard Skills" })] }), _jsx("div", { className: "flex flex-wrap gap-2 mb-6", children: hardSkills.map((skill) => (_jsxs("span", { className: "group px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full text-sm font-medium flex items-center gap-2 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors", children: [skill.nomeCompetencia, _jsx("button", { onClick: (e) => {
+                                                            }, className: "px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm", children: [_jsx("option", { value: "", children: "Selecione um cargo" }), cargosDisponiveis.map((cargo) => (_jsx("option", { value: cargo.id, children: cargo.nomeCargo }, cargo.id)))] })) : (_jsx("span", { children: cargo?.nomeCargo || 'N/A' }))] }), _jsxs("div", { className: "flex items-center gap-2", children: [_jsx(Mail, { className: "h-5 w-5 text-blue-500" }), _jsx("span", { children: email })] })] })] }), emEdicao ? (_jsxs("div", { className: "flex gap-2", children: [_jsx("button", { onClick: aoSalvar, className: "px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg", children: "Salvar" }), _jsx("button", { onClick: aoCancelar, className: "px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg", children: "Cancelar" })] })) : (_jsxs("div", { className: "flex gap-2", children: [_jsxs("button", { onClick: aoEditar, className: "px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg", children: [_jsx(Edit3, { className: "h-4 w-4" }), "Editar Perfil"] }), _jsxs("button", { onClick: exportarParaPDF, className: "px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl flex items-center gap-2 transition-colors shadow-lg", children: [_jsx(Download, { className: "h-4 w-4" }), "Exportar PDF"] })] }))] }) }), _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6", children: [_jsxs("div", { className: "bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-gray-700", children: [_jsxs("div", { className: "flex items-center gap-3 mb-4", children: [_jsx(User, { className: "h-6 w-6 text-blue-500" }), _jsx("h2", { className: "text-xl font-bold text-gray-800 dark:text-gray-100", children: "Sobre mim" })] }), emEdicao ? (_jsx("textarea", { name: "apresentacao", value: apresentacao, onChange: aoMudarPerfil, maxLength: 2000, className: "w-full min-h-48 p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm resize-vertical" })) : (_jsx("p", { className: "text-gray-600 dark:text-gray-300 leading-relaxed text-sm whitespace-pre-line", children: apresentacao }))] }), _jsxs("div", { className: "bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-gray-700 flex flex-col min-h-[400px]", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx(Code, { className: "h-6 w-6 text-blue-500" }), _jsx("h2", { className: "text-xl font-bold text-gray-800 dark:text-gray-100", children: "Hard Skills" }), emEdicao && (_jsxs("span", { className: "text-xs bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full ml-auto", children: [hardSkills.filter(s => s.isHighlighted).length, "/3 destaque(s)"] }))] }), hardSkills.some(s => s.isHighlighted) && (_jsxs("div", { className: "mb-4 pb-4 border-b border-yellow-200 dark:border-yellow-900", children: [_jsxs("p", { className: "text-xs font-semibold text-yellow-700 dark:text-yellow-300 mb-2", children: ["\u2B50 TOP 3 - SUAS MELHORES SKILLS", emEdicao && _jsx("span", { className: "text-xs font-normal ml-2", children: "(arraste para reordenar)" })] }), _jsx("div", { className: "flex flex-wrap gap-2", children: hardSkills
+                                                    .filter(skill => skill.isHighlighted)
+                                                    .sort((a, b) => (a.orderPosition || 0) - (b.orderPosition || 0))
+                                                    .map((skill) => (_jsxs("button", { onClick: () => emEdicao && toggleHighlightHardSkill(skill.id, true), draggable: emEdicao, onDragStart: (e) => {
+                                                        if (!emEdicao)
+                                                            return;
+                                                        setDraggedSkillId(skill.id);
+                                                        e.dataTransfer.effectAllowed = 'move';
+                                                        e.currentTarget.style.opacity = '0.5';
+                                                    }, onDragEnd: (e) => {
+                                                        if (!emEdicao)
+                                                            return;
+                                                        setDraggedSkillId(null);
+                                                        e.currentTarget.style.opacity = '1';
+                                                    }, onDragOver: (e) => {
+                                                        if (!emEdicao || !draggedSkillId)
+                                                            return;
+                                                        e.preventDefault();
+                                                        e.dataTransfer.dropEffect = 'move';
+                                                    }, onDrop: (e) => {
+                                                        if (!emEdicao || !draggedSkillId)
+                                                            return;
+                                                        e.preventDefault();
+                                                        reordenarHighlightedSkills(draggedSkillId, skill.id);
+                                                    }, className: `group px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-900 rounded-full text-sm font-bold flex items-center gap-2 transition-all shadow-lg border-2 border-yellow-600 hover:shadow-xl ${emEdicao ? 'cursor-move' : 'cursor-default'} ${draggedSkillId === skill.id ? 'opacity-50' : ''}`, type: "button", disabled: !emEdicao, children: [`${skill.orderPosition}º`, _jsx("span", { children: skill.nomeCompetencia }), emEdicao && (_jsx(X, { className: "h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" }))] }, skill.id))) })] })), _jsx("div", { className: "flex flex-wrap gap-2 mb-6", children: hardSkills
+                                            .filter(skill => !skill.isHighlighted)
+                                            .map((skill) => (_jsxs("button", { onClick: () => emEdicao && toggleHighlightHardSkill(skill.id, false), type: "button", disabled: !emEdicao, className: "group px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full text-sm font-medium flex items-center gap-2 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors cursor-pointer disabled:cursor-default", title: emEdicao ? "Clique para destacar como top 3" : "", children: [skill.nomeCompetencia, emEdicao ? (_jsx("span", { className: "text-xs opacity-50", children: "\u2606" })) : (_jsx("button", { onClick: (e) => {
                                                         e.stopPropagation();
                                                         removerHardSkill(skill.id);
-                                                    }, className: "opacity-0 group-hover:opacity-100 transition-opacity", type: "button", children: _jsx(X, { className: "h-3 w-3 text-blue-900 dark:text-blue-100" }) })] }, skill.id))) }), _jsx("div", { className: "flex justify-center mt-auto", children: _jsxs("div", { className: "flex gap-2 w-full max-w-sm", children: [_jsxs("select", { value: novaHardSkill, onChange: (e) => setNovaHardSkill(e.target.value), className: "flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm", children: [_jsx("option", { value: "", children: "Selecione uma Hard Skill" }), HARD_SKILLS_DISPONIVEIS
+                                                    }, className: "opacity-0 group-hover:opacity-100 transition-opacity", type: "button", children: _jsx(X, { className: "h-3 w-3 text-blue-900 dark:text-blue-100" }) }))] }, skill.id))) }), _jsx("div", { className: "flex justify-center mt-auto", children: _jsxs("div", { className: "flex gap-2 w-full max-w-sm", children: [_jsxs("select", { value: novaHardSkill, onChange: (e) => setNovaHardSkill(e.target.value), className: "flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-700 text-sm", children: [_jsx("option", { value: "", children: "Selecione uma Hard Skill" }), HARD_SKILLS_DISPONIVEIS
                                                             .filter(skill => !hardSkills.some(hs => normalizarTexto(hs.nomeCompetencia) === normalizarTexto(skill)))
                                                             .map((skill) => (_jsx("option", { value: skill, children: skill }, skill)))] }), _jsx("button", { onClick: adicionarHardSkill, disabled: !novaHardSkill, type: "button", className: "px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-lg flex items-center justify-center", children: _jsx(Plus, { className: "h-4 w-4" }) })] }) })] }), _jsxs("div", { className: "bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-gray-700 flex flex-col min-h-[400px]", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx(Heart, { className: "h-6 w-6 text-blue-500" }), _jsx("h2", { className: "text-xl font-bold text-gray-800 dark:text-gray-100", children: "Soft Skills" })] }), _jsx("div", { className: "flex flex-wrap gap-2 mb-6", children: softSkills.map((skill) => (_jsxs("span", { className: "group px-3 py-2 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 rounded-full text-sm font-medium flex items-center gap-2 hover:bg-green-200 dark:hover:bg-green-800 transition-colors", children: [skill.nomeCompetencia, _jsx("button", { onClick: (e) => {
                                                         e.stopPropagation();
